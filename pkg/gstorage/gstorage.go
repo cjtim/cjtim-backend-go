@@ -1,0 +1,81 @@
+package gstorage
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"io"
+	"log"
+	"net/url"
+	"os"
+
+	"google.golang.org/api/iterator"
+
+	"cloud.google.com/go/storage"
+	"github.com/google/uuid"
+	"github.com/joho/godotenv"
+	"google.golang.org/api/option"
+)
+
+var _ = godotenv.Load()
+var projectID = os.Getenv("GCLOUD_PROJECT_ID")
+var bucketName = os.Getenv("GCLOUD_BUCKET_NAME")
+
+type Bucket struct {
+	Client *storage.Client
+}
+
+func GetClient() (Bucket, error) {
+	ctx := context.Background()
+	var client, err = storage.NewClient(ctx, option.WithCredentialsFile("serviceAcc.json"))
+	if err != nil {
+		log.Fatalf("Failed to create client: %v", err)
+		return Bucket{}, err
+	}
+	return Bucket{Client: client}, nil
+}
+
+func (s *Bucket) Upload(path string, byteData []byte) (string, error) {
+	downloadToken := uuid.New().String()
+	bucket := s.Client.Bucket(bucketName)
+	ctx := context.Background()
+	wc := bucket.Object(path).NewWriter(ctx)
+	wc.Metadata = map[string]string{
+		"firebaseStorageDownloadTokens": downloadToken,
+	}
+	data := bytes.NewReader(byteData)
+	if _, err := io.Copy(wc, data); err != nil {
+		log.Fatalf("createFile: unable to write data to bucket %q, file %q: %v", bucketName, wc.Name, err)
+		return "", nil
+	}
+	if err := wc.Close(); err != nil {
+		fmt.Errorf("Writer.Close: %v", err)
+		return "", nil
+	}
+	downloadURL := ("https://firebasestorage.googleapis.com/v0/b/" + bucketName + "/o/" +
+		url.QueryEscape(wc.Name) + "?alt=media&token=" + downloadToken)
+	return downloadURL, nil
+}
+
+func (s *Bucket) Delete(path string) error {
+	return s.Client.Bucket(bucketName).Object(path).Delete(context.TODO())
+}
+
+func (s *Bucket) List(filename string) []string {
+	query := &storage.Query{StartOffset: filename}
+	var names []string
+	it := s.Client.Bucket(bucketName).Objects(context.TODO(), query)
+	for {
+		attrs, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			fmt.Println(err.Error())
+			return nil
+		}
+		names = append(names, attrs.Name)
+	}
+	fmt.Println(names)
+	return names
+}
