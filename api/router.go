@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/cjtim/cjtim-backend-go/api/files"
+	"github.com/cjtim/cjtim-backend-go/api/line_webhook"
 	"github.com/cjtim/cjtim-backend-go/api/users"
 
 	"github.com/gofiber/fiber/v2"
@@ -15,6 +16,7 @@ func Route(r *fiber.App) {
 	r.Get("/ping", func(c *fiber.Ctx) error {
 		return c.SendString("pong")
 	})
+	r.Post("/line/webhook", line_webhook.Webhook)
 	// r.Post("/post", controllers.PostController)
 	filesRouteSetup(r)
 	userRouteSetup(r)
@@ -23,6 +25,7 @@ func Route(r *fiber.App) {
 func filesRouteSetup(r *fiber.App) {
 	fileRoute := r.Group("/files")
 	fileRoute.Get("/list", files.List)
+	fileRoute.Post("/delete", nil)
 }
 
 func userRouteSetup(r *fiber.App) {

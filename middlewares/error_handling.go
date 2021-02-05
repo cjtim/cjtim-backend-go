@@ -1,10 +1,13 @@
 package middlewares
 
 import (
+	"log"
+
 	"github.com/gofiber/fiber/v2"
 )
 
 func ErrorHandling(c *fiber.Ctx, err error) error {
+	log.Println(err)
 	// Default 500 statuscode
 	code := fiber.StatusInternalServerError
 
