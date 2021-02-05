@@ -3,7 +3,6 @@ package gstorage
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"log"
 	"net/url"
@@ -45,12 +44,10 @@ func (s *Bucket) Upload(path string, byteData []byte) (string, error) {
 	}
 	data := bytes.NewReader(byteData)
 	if _, err := io.Copy(wc, data); err != nil {
-		log.Fatalf("createFile: unable to write data to bucket %q, file %q: %v", bucketName, wc.Name, err)
-		return "", nil
+		return "", err
 	}
 	if err := wc.Close(); err != nil {
-		fmt.Errorf("Writer.Close: %v", err)
-		return "", nil
+		return "", err
 	}
 	downloadURL := ("https://firebasestorage.googleapis.com/v0/b/" + bucketName + "/o/" +
 		url.QueryEscape(wc.Name) + "?alt=media&token=" + downloadToken)
@@ -61,7 +58,7 @@ func (s *Bucket) Delete(path string) error {
 	return s.Client.Bucket(bucketName).Object(path).Delete(context.TODO())
 }
 
-func (s *Bucket) List(filename string) []string {
+func (s *Bucket) List(filename string) ([]string, error) {
 	query := &storage.Query{StartOffset: filename}
 	var names []string
 	it := s.Client.Bucket(bucketName).Objects(context.TODO(), query)
@@ -71,11 +68,9 @@ func (s *Bucket) List(filename string) []string {
 			break
 		}
 		if err != nil {
-			fmt.Println(err.Error())
-			return nil
+			return nil, err
 		}
 		names = append(names, attrs.Name)
 	}
-	fmt.Println(names)
-	return names
+	return names, nil
 }
