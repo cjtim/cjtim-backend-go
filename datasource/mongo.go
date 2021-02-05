@@ -2,7 +2,6 @@ package datasource
 
 import (
 	"context"
-	"log"
 	"os"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -11,17 +10,18 @@ import (
 
 // MongoClient for connect MongoDB
 // GoRoutine
-func MongoClient(datasourceChan chan *mongo.Client) {
+func MongoClient(datasourceChan chan *mongo.Client) error {
 	client, err := mongo.NewClient(options.Client().ApplyURI(os.Getenv("MONGO_URI")))
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	err = client.Connect(context.TODO())
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	if client.Ping(context.TODO(), nil) == nil {
 		println("DB connected!")
 	}
 	datasourceChan <- client
+	return nil
 }

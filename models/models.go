@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"os"
 
@@ -41,9 +40,12 @@ func (s *Models) FindAll(collectionName string, results interface{}, filter bson
 	}
 	defer cursor.Close(context.TODO())
 	if cursor.All(context.TODO(), &tmp) != nil {
-		log.Fatal(err)
+		return err
 	}
-	jbyte, _ := json.Marshal(tmp)
+	jbyte, err := json.Marshal(tmp)
+	if err != nil {
+		return err
+	}
 	json.Unmarshal(jbyte, &results)
 	return nil
 }
@@ -67,10 +69,8 @@ func (s *Models) InsertOne(collectionName string, data interface{}) (interface{}
 	collection := s.Client.Database(os.Getenv("MONGO_DB")).Collection(collectionName)
 	insertResult, err := collection.InsertOne(context.TODO(), data)
 	if err != nil {
-		log.Fatal(err)
 		return nil, err
 	}
-	fmt.Println("Inserted a single document: ", insertResult.InsertedID)
 	return insertResult.InsertedID, nil
 }
 
@@ -86,6 +86,6 @@ func (s *Models) Destroy(collectionName string, filter bson.M) error {
 	if filter == nil {
 		return errors.New("no filter apply!")
 	}
-	collection.DeleteMany(context.TODO(), filter)
-	return nil
+	_, err := collection.DeleteMany(context.TODO(), filter)
+	return err
 }
