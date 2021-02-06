@@ -9,12 +9,10 @@ import (
 	"syscall"
 
 	"github.com/cjtim/cjtim-backend-go/api"
-	"github.com/cjtim/cjtim-backend-go/datasource"
 	"github.com/cjtim/cjtim-backend-go/middlewares"
 	"github.com/cjtim/cjtim-backend-go/models"
 	"github.com/gofiber/fiber/v2"
 	_ "github.com/joho/godotenv/autoload"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func main() {
@@ -25,10 +23,11 @@ func main() {
 }
 
 func startServer() *fiber.App {
-	var m *models.Models
-	DBchannel := make(chan *mongo.Client)
-	go datasource.MongoClient(DBchannel) // GoRoutine connectDB
-	m = models.GetModels(<-DBchannel)
+	m, err := models.GetModels(nil)
+	if err != nil {
+		log.Panic(err)
+		return nil
+	}
 	app := fiber.New(fiber.Config{
 		ErrorHandler: middlewares.ErrorHandling,
 	})
@@ -38,12 +37,12 @@ func startServer() *fiber.App {
 	})
 	app.Use(middlewares.Cors())
 	api.Route(app) // setup router path
-	setupCloseHandler(app, m)
+	setupCloseHandler(m)
 	return app
 }
 
 // setupCloseHandler - What to do when got ctrl+c SIGTERM
-func setupCloseHandler(app *fiber.App, m *models.Models) {
+func setupCloseHandler(m *models.Models) {
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {

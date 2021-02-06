@@ -4,24 +4,27 @@ import (
 	"context"
 	"os"
 
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+var _ = godotenv.Load()
+
 // MongoClient for connect MongoDB
 // GoRoutine
-func MongoClient(datasourceChan chan *mongo.Client) error {
+func MongoClient() (*mongo.Client, error) {
 	client, err := mongo.NewClient(options.Client().ApplyURI(os.Getenv("MONGO_URI")))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	err = client.Connect(context.TODO())
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if client.Ping(context.TODO(), nil) == nil {
-		println("DB connected!")
+	if err := client.Ping(context.TODO(), nil); err != nil {
+		return nil, err
 	}
-	datasourceChan <- client
-	return nil
+	println("DB connected!")
+	return client, nil
 }

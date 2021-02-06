@@ -7,7 +7,7 @@ import (
 )
 
 func ErrorHandling(c *fiber.Ctx, err error) error {
-	log.Println(err)
+	log.Println(string(c.IP()), err)
 	// Default 500 statuscode
 	code := fiber.StatusInternalServerError
 

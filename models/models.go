@@ -18,18 +18,21 @@ type Models struct {
 }
 
 // GetModels by pass Mongo Client pointer
-func GetModels(c *mongo.Client) *Models {
+func GetModels(c *mongo.Client) (*Models, error) {
 	models := &Models{}
-	if c == nil {
-		DBchannel := make(chan *mongo.Client)
-		go datasource.MongoClient(DBchannel) // GoRoutine connectDB
-		models.Client = <-DBchannel
-		return models
+	if c != nil {
+		models.Client = c
+		return models, nil
 	}
-	models.Client = c
-	return models
+	client, err := datasource.MongoClient() // GoRoutine connectDB
+	if err != nil {
+		return nil, err
+	}
+	models.Client = client
+	return models, nil
 }
 
+// FindAll - Don't forget []data is return
 func (s *Models) FindAll(collectionName string, results interface{}, filter bson.M) error {
 	var tmp []bson.M
 	collection := s.Client.Database(os.Getenv("MONGO_DB")).Collection(collectionName)
@@ -50,6 +53,7 @@ func (s *Models) FindAll(collectionName string, results interface{}, filter bson
 	return nil
 }
 
+// FindOne .
 func (s *Models) FindOne(collectionName string, results interface{}, filter bson.M) error {
 	var tmp bson.M
 	collection := s.Client.Database(os.Getenv("MONGO_DB")).Collection(collectionName)
@@ -65,6 +69,7 @@ func (s *Models) FindOne(collectionName string, results interface{}, filter bson
 	return nil
 }
 
+// InsertOne insert data to collection
 func (s *Models) InsertOne(collectionName string, data interface{}) (interface{}, error) {
 	collection := s.Client.Database(os.Getenv("MONGO_DB")).Collection(collectionName)
 	insertResult, err := collection.InsertOne(context.TODO(), data)
@@ -74,6 +79,7 @@ func (s *Models) InsertOne(collectionName string, data interface{}) (interface{}
 	return insertResult.InsertedID, nil
 }
 
+// Update data in collection
 func (s *Models) Update(collectionName string, data interface{}, filter interface{}) (*mongo.UpdateResult, error) {
 	collection := s.Client.Database(os.Getenv("MONGO_DB")).Collection(collectionName)
 	return collection.UpdateMany(context.TODO(), filter, bson.M{
@@ -81,10 +87,11 @@ func (s *Models) Update(collectionName string, data interface{}, filter interfac
 	})
 }
 
+// Destroy - remove data from collection
 func (s *Models) Destroy(collectionName string, filter bson.M) error {
 	collection := s.Client.Database(os.Getenv("MONGO_DB")).Collection(collectionName)
 	if filter == nil {
-		return errors.New("no filter apply!")
+		return errors.New("no filter apply")
 	}
 	_, err := collection.DeleteMany(context.TODO(), filter)
 	return err

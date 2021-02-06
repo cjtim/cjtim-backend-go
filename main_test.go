@@ -6,12 +6,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/cjtim/cjtim-backend-go/datasource"
 	"github.com/cjtim/cjtim-backend-go/datasource/collections"
 	"github.com/cjtim/cjtim-backend-go/models"
 	"github.com/gofiber/fiber/v2/utils"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func init() {
@@ -36,10 +34,19 @@ func Test_Route_Ping(t *testing.T) {
 	utils.AssertEqual(t, "pong", string(body), "PING PONG")
 }
 
+func Test_Route_Me(t *testing.T) {
+	resp, err := app.Test(httptest.NewRequest("GET", "/users/me", nil))
+	utils.AssertEqual(t, nil, err, "is error?")
+	utils.AssertEqual(t, 403, resp.StatusCode, "Status code: 403")
+	body, err := ioutil.ReadAll(resp.Body)
+	utils.AssertEqual(t, "Forbidden", string(body), "Forbidden access due to no Authorization headers")
+}
+
 func Test_Database(t *testing.T) {
-	client := make(chan *mongo.Client)
-	go datasource.MongoClient(client)
-	m := models.GetModels(<-client)
+	m, err := models.GetModels(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	newData := bson.M{
 		"test": "123567",
