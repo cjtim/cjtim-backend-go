@@ -26,6 +26,7 @@ func Route(r *fiber.App) {
 func filesRouteSetup(r *fiber.App) {
 	fileRoute := r.Group("/files", middlewares.LiffVerify)
 	fileRoute.Get("/list", files.List)
+	fileRoute.Post("/upload", files.Upload)
 	fileRoute.Post("/delete", nil)
 }
 

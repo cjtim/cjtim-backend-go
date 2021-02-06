@@ -1,49 +1,31 @@
 package files
 
 import (
-	"mime"
-
 	"github.com/cjtim/cjtim-backend-go/datasource/collections"
 	"github.com/cjtim/cjtim-backend-go/models"
 	"github.com/cjtim/cjtim-backend-go/pkg/gstorage"
-	"github.com/cjtim/cjtim-backend-go/pkg/line"
-	"github.com/gofiber/fiber/v2"
-	"github.com/line/line-bot-sdk-go/linebot"
 )
 
-func Add(c *fiber.Ctx, e *linebot.Event) error {
-	message := e.Message.(*linebot.FileMessage)
-	fileByte, fileType, err := line.GetContent(message.ID)
-	if err != nil {
-		return err
-	}
-	ext, err := mime.ExtensionsByType(fileType)
-	if ext == nil {
-		ext = []string{""}
-	}
-	if err != nil {
-		return err
-	}
+// Add - Upload file from LineUser chat, from web
+func Add(fullFileName string, byteData []byte, lineUID string, m *models.Models) (*collections.FileScheama, error) {
 	Gclient, err := gstorage.GetClient()
+	defer Gclient.Client.Close()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	objPath := ("users/" + e.Source.UserID + "/files/" + message.FileName + ext[0])
-	url, err := Gclient.Upload(objPath, fileByte)
+	objPath := ("users/" + lineUID + "/files/" + fullFileName)
+	url, err := Gclient.Upload(objPath, byteData)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	m := c.Locals("db").(*models.Models)
 	data := &collections.FileScheama{
-		FileName: message.FileName + ext[0],
+		FileName: fullFileName,
 		URL:      url,
-		LineUID:  e.Source.UserID,
+		LineUID:  lineUID,
 	}
 	_, err = m.InsertOne("files", data)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return c.JSON(fiber.Map{
-		"url": url,
-	})
+	return data, nil
 }

@@ -5,8 +5,10 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/cjtim/cjtim-backend-go/models"
 	"github.com/cjtim/cjtim-backend-go/pkg/files"
 	"github.com/cjtim/cjtim-backend-go/pkg/images"
+	"github.com/cjtim/cjtim-backend-go/pkg/line"
 	"github.com/cjtim/cjtim-backend-go/pkg/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
@@ -33,9 +35,21 @@ func Webhook(c *fiber.Ctx) error {
 	if len(event) > 0 {
 		switch EventMessageType(event[0]) {
 		case "file":
-			return files.Add(c, event[0])
+			message := event[0].Message.(*linebot.FileMessage)
+			fileByte, fileType, err := line.GetContent(message.ID)
+			if err != nil {
+				return err
+			}
+			ext, err := utils.ContentTypeToExtension(fileType)
+			if err != nil {
+				return nil
+			}
+			_, err = files.Add(message.ID+ext[0], fileByte, event[0].Source.UserID,
+				c.Locals("db").(*models.Models))
+			return err
 		case "image":
-			return images.Add(c, event[0])
+			_, err = images.Add(event[0], c.Locals("db").(*models.Models))
+			return err
 		}
 	}
 	return c.SendStatus(fiber.StatusOK)

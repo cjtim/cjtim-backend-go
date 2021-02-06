@@ -30,6 +30,7 @@ func startServer() *fiber.App {
 	}
 	app := fiber.New(fiber.Config{
 		ErrorHandler: middlewares.ErrorHandling,
+		BodyLimit:    100 * 1024 * 1024, // Limit file size to 4MB
 	})
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("db", m)
