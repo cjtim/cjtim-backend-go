@@ -27,9 +27,12 @@ func LineIsTokenValid(accToken string) error {
 }
 
 func LineGetProfile(accToken string) (*linebot.UserProfileResponse, error) {
-	resp, err := restyClient.R().SetHeader("Authorization", accToken).Get("https://api.line.me/v2/profile")
+	resp, err := restyClient.R().SetHeader("Authorization", "Bearer "+accToken).Get("https://api.line.me/v2/profile")
 	if err != nil {
 		return nil, err
+	}
+	if resp.StatusCode() != 200 {
+		return nil, errors.New(string(resp.Body()))
 	}
 	profile := &linebot.UserProfileResponse{}
 	if resp.StatusCode() == 200 {
