@@ -4,6 +4,7 @@ import (
 	"github.com/cjtim/cjtim-backend-go/api/files"
 	"github.com/cjtim/cjtim-backend-go/api/line_webhook"
 	"github.com/cjtim/cjtim-backend-go/api/users"
+	"github.com/cjtim/cjtim-backend-go/middlewares"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -23,12 +24,12 @@ func Route(r *fiber.App) {
 }
 
 func filesRouteSetup(r *fiber.App) {
-	fileRoute := r.Group("/files")
+	fileRoute := r.Group("/files", middlewares.LiffVerify)
 	fileRoute.Get("/list", files.List)
 	fileRoute.Post("/delete", nil)
 }
 
 func userRouteSetup(r *fiber.App) {
-	usersRoute := r.Group("/users")
+	usersRoute := r.Group("/users", middlewares.LiffVerify)
 	usersRoute.Get("/me", users.Me)
 }
