@@ -5,7 +5,9 @@ import (
 	"errors"
 	"os"
 
+	"github.com/cjtim/cjtim-backend-go/datasource/collections"
 	"github.com/go-resty/resty/v2"
+	"github.com/joho/godotenv"
 )
 
 type RebrandlyNewUrlReq struct {
@@ -15,17 +17,13 @@ type RebrandlyNewUrlReq struct {
 type RebrandlyDomainReq struct {
 	Fullname string `json:"fullName"`
 }
-type RebrandlyNewUrlResp struct {
-	ID          string `json:"id"`
-	ShortURL    string `json:"shortUrl"`
-	Destination string `json:"destination"`
-}
 
+var _ = godotenv.Load()
 var restyClient = resty.New()
 
 // Add -
-func Add(originalURL string) (*RebrandlyNewUrlResp, error) {
-	if originalURL[:8] != "https://" || originalURL[:7] != "http://" {
+func Add(originalURL string) (*collections.URLScheama, error) {
+	if originalURL[:8] != "https://" && originalURL[:7] != "http://" {
 		originalURL = "http://" + originalURL
 	}
 	body := &RebrandlyNewUrlReq{
@@ -43,7 +41,10 @@ func Add(originalURL string) (*RebrandlyNewUrlResp, error) {
 	if err != nil {
 		return nil, err
 	}
-	data := &RebrandlyNewUrlResp{}
+	if resp.StatusCode() != 200 {
+		return nil, errors.New(string(resp.Body()))
+	}
+	data := &collections.URLScheama{}
 	if err := json.Unmarshal(resp.Body(), data); err != nil {
 		return nil, err
 	}

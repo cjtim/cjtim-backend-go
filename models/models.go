@@ -9,6 +9,7 @@ import (
 
 	"github.com/cjtim/cjtim-backend-go/datasource"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -70,13 +71,13 @@ func (s *Models) FindOne(collectionName string, results interface{}, filter bson
 }
 
 // InsertOne insert data to collection
-func (s *Models) InsertOne(collectionName string, data interface{}) (interface{}, error) {
+func (s *Models) InsertOne(collectionName string, data interface{}) (primitive.ObjectID, error) {
 	collection := s.Client.Database(os.Getenv("MONGO_DB")).Collection(collectionName)
 	insertResult, err := collection.InsertOne(context.TODO(), data)
 	if err != nil {
-		return nil, err
+		return primitive.NewObjectID(), err
 	}
-	return insertResult.InsertedID, nil
+	return insertResult.InsertedID.(primitive.ObjectID), nil
 }
 
 // Update data in collection

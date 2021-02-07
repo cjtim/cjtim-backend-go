@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/cjtim/cjtim-backend-go/api/files"
 	"github.com/cjtim/cjtim-backend-go/api/line_webhook"
+	"github.com/cjtim/cjtim-backend-go/api/urls"
 	"github.com/cjtim/cjtim-backend-go/api/users"
 	"github.com/cjtim/cjtim-backend-go/middlewares"
 
@@ -20,7 +21,8 @@ func Route(r *fiber.App) {
 	r.Post("/line/webhook", line_webhook.Webhook)
 	// r.Post("/post", controllers.PostController)
 	filesRouteSetup(r)
-	userRouteSetup(r)
+	usersRouteSetup(r)
+	urlsRouteSetup(r)
 }
 
 func filesRouteSetup(r *fiber.App) {
@@ -30,7 +32,14 @@ func filesRouteSetup(r *fiber.App) {
 	fileRoute.Post("/delete", nil)
 }
 
-func userRouteSetup(r *fiber.App) {
+func usersRouteSetup(r *fiber.App) {
 	usersRoute := r.Group("/users", middlewares.LiffVerify)
 	usersRoute.Get("/me", users.Me)
+}
+
+func urlsRouteSetup(r *fiber.App) {
+	urlsRoute := r.Group("/urls", middlewares.LiffVerify)
+	urlsRoute.Post("/add", urls.Add)
+	urlsRoute.Get("/list", urls.List)
+	urlsRoute.Post("/delete", urls.Delete)
 }
