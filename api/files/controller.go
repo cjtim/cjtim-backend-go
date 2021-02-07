@@ -47,15 +47,14 @@ func Delete(c *fiber.Ctx) error {
 	body := &struct {
 		Filename string `json:"fileName"`
 	}{}
-	if err := c.BodyParser(body); err != nil {
+	err := c.BodyParser(body)
+	if err != nil {
 		return err
 	}
 	models := c.Locals("db").(*models.Models)
-	files := &[]collections.FileScheama{}
-	if err := models.Destroy("files", bson.M{"fileName": body.Filename, "lineUid": user.UserID}); err != nil {
+	err = models.Destroy("files", bson.M{"fileName": body.Filename, "lineUid": user.UserID})
+	if err != nil {
 		return err
 	}
-	return c.JSON(fiber.Map{
-		"files": files,
-	})
+	return c.SendStatus(fiber.StatusOK)
 }
