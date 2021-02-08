@@ -6,6 +6,7 @@ import (
 	"github.com/cjtim/cjtim-backend-go/datasource/collections"
 	"github.com/cjtim/cjtim-backend-go/models"
 	"github.com/cjtim/cjtim-backend-go/pkg/files"
+	"github.com/cjtim/cjtim-backend-go/pkg/gstorage"
 	"github.com/gofiber/fiber/v2"
 	"github.com/line/line-bot-sdk-go/linebot"
 	"go.mongodb.org/mongo-driver/bson"
@@ -48,6 +49,15 @@ func Delete(c *fiber.Ctx) error {
 		Filename string `json:"fileName"`
 	}{}
 	err := c.BodyParser(body)
+	if err != nil {
+		return err
+	}
+	gClient, err := gstorage.GetClient()
+	defer gClient.Client.Close()
+	if err != nil {
+		return err
+	}
+	err = gClient.Delete("users/" + user.UserID + "/files/" + body.Filename)
 	if err != nil {
 		return err
 	}
