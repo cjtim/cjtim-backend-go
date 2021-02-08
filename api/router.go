@@ -30,7 +30,7 @@ func filesRouteSetup(r *fiber.App) {
 	fileRoute := r.Group("/files", middlewares.LiffVerify)
 	fileRoute.Get("/list", files.List)
 	fileRoute.Post("/upload", files.Upload)
-	fileRoute.Post("/delete", nil)
+	fileRoute.Post("/delete", files.Delete)
 }
 
 func usersRouteSetup(r *fiber.App) {
