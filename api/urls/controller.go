@@ -58,6 +58,15 @@ func Delete(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	url := &collections.URLScheama{}
+	err = m.FindOne("urls", url, bson.M{"lineUid": user.UserID, "shortUrl": body.ShortUrl})
+	if err != nil {
+		return err
+	}
+	err = rebrandly.Delete(url.RebrandlyID)
+	if err != nil {
+		return err
+	}
 	m.Destroy("urls", bson.M{
 		"shortUrl": body.ShortUrl,
 		"lineUid":  user.UserID,

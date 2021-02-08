@@ -6,7 +6,6 @@ import (
 	"github.com/cjtim/cjtim-backend-go/datasource/collections"
 	"github.com/cjtim/cjtim-backend-go/models"
 	"github.com/cjtim/cjtim-backend-go/pkg/files"
-	"github.com/cjtim/cjtim-backend-go/pkg/gstorage"
 	"github.com/gofiber/fiber/v2"
 	"github.com/line/line-bot-sdk-go/linebot"
 	"go.mongodb.org/mongo-driver/bson"
@@ -44,6 +43,7 @@ func List(c *fiber.Ctx) error {
 }
 
 func Delete(c *fiber.Ctx) error {
+	models := c.Locals("db").(*models.Models)
 	user := c.Locals("user").(*linebot.UserProfileResponse)
 	body := &struct {
 		Filename string `json:"fileName"`
@@ -52,17 +52,7 @@ func Delete(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	gClient, err := gstorage.GetClient()
-	defer gClient.Client.Close()
-	if err != nil {
-		return err
-	}
-	err = gClient.Delete("users/" + user.UserID + "/files/" + body.Filename)
-	if err != nil {
-		return err
-	}
-	models := c.Locals("db").(*models.Models)
-	err = models.Destroy("files", bson.M{"fileName": body.Filename, "lineUid": user.UserID})
+	err = files.Delete(body.Filename, user.UserID, models)
 	if err != nil {
 		return err
 	}

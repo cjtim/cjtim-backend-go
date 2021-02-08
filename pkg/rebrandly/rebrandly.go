@@ -52,7 +52,8 @@ func Add(originalURL string) (*collections.URLScheama, error) {
 }
 
 func Delete(id string) error {
-	resp, err := restyClient.R().Delete("https://api.rebrandly.com/v1/links/" + id)
+	resp, err := restyClient.R().SetHeader("apikey",
+		os.Getenv("REBRANDLY_API")).Delete("https://api.rebrandly.com/v1/links/" + id)
 	if err != nil {
 		return err
 	}
