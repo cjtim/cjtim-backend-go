@@ -2,7 +2,7 @@ package api
 
 import (
 	"github.com/cjtim/cjtim-backend-go/api/files"
-	"github.com/cjtim/cjtim-backend-go/api/line_webhook"
+	line_controllers "github.com/cjtim/cjtim-backend-go/api/line"
 	"github.com/cjtim/cjtim-backend-go/api/urls"
 	"github.com/cjtim/cjtim-backend-go/api/users"
 	"github.com/cjtim/cjtim-backend-go/middlewares"
@@ -18,7 +18,8 @@ func Route(r *fiber.App) {
 	r.Get("/ping", func(c *fiber.Ctx) error {
 		return c.SendString("pong")
 	})
-	r.Post("/line/webhook", line_webhook.Webhook)
+	r.Post("/line/webhook", line_controllers.Webhook)
+	r.Get("/line/weatherBroadcast", line_controllers.WeatherBroadcast)
 	// r.Post("/post", controllers.PostController)
 	filesRouteSetup(r)
 	usersRouteSetup(r)

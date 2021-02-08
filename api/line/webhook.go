@@ -1,4 +1,4 @@
-package line_webhook
+package line_controllers
 
 import (
 	"bytes"
@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/cjtim/cjtim-backend-go/models"
+	"github.com/cjtim/cjtim-backend-go/pkg/airvisual"
 	"github.com/cjtim/cjtim-backend-go/pkg/files"
 	"github.com/cjtim/cjtim-backend-go/pkg/images"
 	"github.com/cjtim/cjtim-backend-go/pkg/line"
@@ -17,6 +18,7 @@ import (
 
 var _ = godotenv.Load()
 
+// Webhook - for line webhook
 func Webhook(c *fiber.Ctx) error {
 	// Convert fiber.Ctx to http.Request
 	// for linebot.ParseRequest
@@ -34,6 +36,19 @@ func Webhook(c *fiber.Ctx) error {
 	// Webhook type
 	if len(event) > 0 {
 		switch EventMessageType(event[0]) {
+		case "location":
+			location := event[0].Message.(*linebot.LocationMessage)
+			weatherData, err := airvisual.GetByLocation(location.Latitude, location.Longitude)
+			if err != nil {
+				return err
+			}
+			_, err = line.Reply(event[0].ReplyToken, []linebot.SendingMessage{
+				line.WeatherFlexMessage(weatherData),
+			})
+			if err != nil {
+				return err
+			}
+			return nil
 		case "file":
 			message := event[0].Message.(*linebot.FileMessage)
 			fileByte, fileType, err := line.GetContent(message.ID)
@@ -55,6 +70,7 @@ func Webhook(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusOK)
 }
 
+// EventMessageType - Check event message type
 func EventMessageType(e *linebot.Event) linebot.MessageType {
 	switch e.Message.(type) {
 	case *linebot.TextMessage:
