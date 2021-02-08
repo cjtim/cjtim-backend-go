@@ -57,3 +57,11 @@ func GetContent(messageID string) ([]byte, string, error) {
 	}
 	return fileByte, content.ContentType, nil
 }
+
+func Reply(replayToken string, msgs []linebot.SendingMessage) (*linebot.BasicResponse, error) {
+	return LineBot.ReplyMessage(replayToken, msgs...).Do()
+}
+
+func Broadcast(msgs []linebot.SendingMessage) (*linebot.BasicResponse, error) {
+	return LineBot.BroadcastMessage(msgs...).Do()
+}

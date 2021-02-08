@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/joho/godotenv"
@@ -13,7 +14,7 @@ var _ = godotenv.Load()
 var restyClient = resty.New()
 
 func Get(queryParams map[string]string) (*AirVisualResponse, error) {
-	resp, err := restyClient.R().SetQueryParams(queryParams).Get("https://api.airvisual.com/v2/city")
+	resp, err := restyClient.R().SetQueryParams(queryParams).Get("http://api.airvisual.com/v2/nearest_city")
 	body := &AirVisualResponse{}
 	if err != nil {
 		return nil, err
@@ -25,6 +26,21 @@ func Get(queryParams map[string]string) (*AirVisualResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(string(resp.Body()))
 	return body, nil
+}
+
+func GetByLocation(lat float64, lon float64) (*AirVisualResponse, error) {
+	return Get(map[string]string{
+		"lat": fmt.Sprintf("%f", lat),
+		"lon": fmt.Sprintf("%f", lon),
+		"key": os.Getenv("AIR_API_KEY"),
+	})
+}
+func GetPhayaThaiCity() (*AirVisualResponse, error) {
+	return Get(map[string]string{
+		"city":    "Phaya Thai",
+		"state":   "Bangkok",
+		"country": "Thailand",
+		"key":     os.Getenv("AIR_API_KEY"),
+	})
 }
