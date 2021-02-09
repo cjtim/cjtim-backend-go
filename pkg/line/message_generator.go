@@ -4,10 +4,9 @@ import (
 	"fmt"
 
 	"github.com/cjtim/cjtim-backend-go/pkg/airvisual"
-	"github.com/line/line-bot-sdk-go/linebot"
 )
 
-func WeatherFlexMessage(data *airvisual.AirVisualResponse) *linebot.FlexMessage {
+func WeatherFlexMessage(data *airvisual.AirVisualResponse) map[string]interface{} {
 	var headerMessage, bgColor string
 	AQIValue := fmt.Sprintf("%v", data.Data.Current.Pollution.AQIUS) + " AQIUS"
 	innerMessage := fmt.Sprintf(
@@ -37,59 +36,72 @@ Wind Speed: %v(m/s)`,
 		headerMessage = "อากาศแย่มากเลย🤢"
 		bgColor = `#FF6B6E`
 	}
-	return &linebot.FlexMessage{
-		AltText: "รายงานอากาศ",
-		Contents: &linebot.BubbleContainer{
-			Type: "bubble",
-			Size: "kilo",
-			Header: &linebot.BoxComponent{
-				Type:   "box",
-				Layout: "vertical",
-				Contents: []linebot.FlexComponent{
-					&linebot.TextComponent{
-						Type:    "text",
-						Text:    headerMessage,
-						Color:   "#ffffff",
-						Align:   "start",
-						Size:    "xl",
-						Gravity: "center",
+	return map[string]interface{}{
+		"type":    "flex",
+		"altText": "รายงานอากาศ",
+		"contents": map[string]interface{}{
+			"type": "bubble",
+			"size": "kilo",
+			"header": map[string]interface{}{
+				"type":   "box",
+				"layout": "vertical",
+				"contents": []map[string]interface{}{
+					{
+						"type":    "text",
+						"text":    headerMessage,
+						"color":   "#ffffff",
+						"align":   "start",
+						"size":    "xl",
+						"gravity": "center",
 					},
-					&linebot.TextComponent{
-						Type:    "text",
-						Text:    AQIValue,
-						Color:   "#ffffff",
-						Align:   "start",
-						Size:    "xxl",
-						Gravity: "center",
-						Margin:  "lg",
+					{
+						"type":    "text",
+						"text":    AQIValue,
+						"color":   "#ffffff",
+						"align":   "start",
+						"size":    "xxl",
+						"gravity": "center",
+						"margin":  "lg",
 					},
 				},
-				BackgroundColor: bgColor,
+				"backgroundColor": bgColor,
+				"paddingTop":      "19px",
+				"paddingAll":      "12px",
+				"paddingBottom":   "16px",
+				"action": map[string]interface{}{
+					"type":  "uri",
+					"label": "action",
+					"uri":   "https://www.iqair.com/th-en/thailand/bangkok/phaya-thai",
+					"altUri": map[string]interface{}{
+						"desktop": "https://www.iqair.com/th-en/thailand/bangkok/phaya-thai",
+					},
+				},
 			},
-			Body: &linebot.BoxComponent{
-				Type:   "box",
-				Layout: "vertical",
-				Contents: []linebot.FlexComponent{
-					&linebot.BoxComponent{
-						Type:   "box",
-						Layout: "horizontal",
-						Contents: []linebot.FlexComponent{
-							&linebot.TextComponent{
-								Type:  "text",
-								Text:  innerMessage,
-								Color: "#000000",
-								Size:  "lg",
-								Wrap:  true,
+			"body": map[string]interface{}{
+				"type":   "box",
+				"layout": "vertical",
+				"contents": []map[string]interface{}{
+					{
+						"type":   "box",
+						"layout": "horizontal",
+						"contents": []map[string]interface{}{
+							{
+								"type":  "text",
+								"text":  innerMessage,
+								"color": "#000000",
+								"size":  "lg",
+								"wrap":  true,
 							},
 						},
-						Flex: linebot.IntPtr(1),
+						"flex": 1,
 					},
 				},
-				Spacing: linebot.FlexComponentSpacingTypeLg,
+				"spacing":    "lg",
+				"paddingAll": "12px",
 			},
-			Styles: &linebot.BubbleStyle{
-				Footer: &linebot.BlockStyle{
-					Separator: false,
+			"styles": map[string]interface{}{
+				"footer": map[string]interface{}{
+					"separator": false,
 				},
 			},
 		},

@@ -58,10 +58,39 @@ func GetContent(messageID string) ([]byte, string, error) {
 	return fileByte, content.ContentType, nil
 }
 
-func Reply(replayToken string, msgs []linebot.SendingMessage) (*linebot.BasicResponse, error) {
-	return LineBot.ReplyMessage(replayToken, msgs...).Do()
+func Reply(replayToken string, msgs []interface{}) error {
+	headers := map[string]string{
+		"Content-Type":  "application/json",
+		"Authorization": "Bearer " + os.Getenv("LINE_CHANNEL_ACCESS_TOKEN"),
+	}
+	instance := restyClient.R().SetHeaders(headers).SetBody(map[string]interface{}{
+		"replyToken": replayToken,
+		"messages":   msgs,
+	})
+	resp, err := instance.Post("https://api.line.me/v2/bot/message/reply")
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode() != 200 {
+		return errors.New(string(resp.Body()))
+	}
+	return nil
 }
 
-func Broadcast(msgs []linebot.SendingMessage) (*linebot.BasicResponse, error) {
-	return LineBot.BroadcastMessage(msgs...).Do()
+func Broadcast(msgs []interface{}) error {
+	headers := map[string]string{
+		"Content-Type":  "application/json",
+		"Authorization": "Bearer " + os.Getenv("LINE_CHANNEL_ACCESS_TOKEN"),
+	}
+	instance := restyClient.R().SetHeaders(headers).SetBody(map[string]interface{}{
+		"messages": msgs,
+	})
+	resp, err := instance.Post("https://api.line.me/v2/bot/message/broadcast")
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode() != 200 {
+		return errors.New(string(resp.Body()))
+	}
+	return nil
 }

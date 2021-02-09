@@ -42,9 +42,8 @@ func Webhook(c *fiber.Ctx) error {
 			if err != nil {
 				return err
 			}
-			_, err = line.Reply(event[0].ReplyToken, []linebot.SendingMessage{
-				line.WeatherFlexMessage(weatherData),
-			})
+			err = line.Reply(event[0].ReplyToken,
+				[]interface{}{line.WeatherFlexMessage(weatherData)})
 			if err != nil {
 				return err
 			}

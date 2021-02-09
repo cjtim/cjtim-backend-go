@@ -8,7 +8,6 @@ import (
 	"github.com/cjtim/cjtim-backend-go/pkg/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
-	"github.com/line/line-bot-sdk-go/linebot"
 )
 
 var _ = godotenv.Load()
@@ -23,7 +22,8 @@ func WeatherBroadcast(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	_, err = line.Broadcast([]linebot.SendingMessage{line.WeatherFlexMessage(resp)})
+	msgs := []interface{}{line.WeatherFlexMessage(resp)}
+	err = line.Broadcast(msgs)
 	if err != nil {
 		return nil
 	}
