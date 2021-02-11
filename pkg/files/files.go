@@ -4,7 +4,9 @@ import (
 	"github.com/cjtim/cjtim-backend-go/datasource/collections"
 	"github.com/cjtim/cjtim-backend-go/models"
 	"github.com/cjtim/cjtim-backend-go/pkg/gstorage"
+	"github.com/cjtim/cjtim-backend-go/pkg/line"
 	"github.com/cjtim/cjtim-backend-go/pkg/rebrandly"
+	"github.com/cjtim/cjtim-backend-go/pkg/utils"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -34,6 +36,22 @@ func Add(fullFileName string, byteData []byte, lineUID string, m *models.Models)
 		return nil, err
 	}
 	return data, nil
+}
+
+// AddFromLine - Contents being upload via line chat will parse here
+func AddFromLine(messageID string, lineUID string, m *models.Models) (*collections.FileScheama, error) {
+	fileByte, fileType, err := line.GetContent(messageID)
+	if err != nil {
+		return nil, err
+	}
+	ext, err := utils.ContentTypeToExtension(fileType)
+	if ext == nil {
+		ext = []string{""}
+	}
+	if err != nil {
+		return nil, err
+	}
+	return Add(messageID+ext[0], fileByte, lineUID, m)
 }
 
 // Delete - Remove file from storage and rebrandly

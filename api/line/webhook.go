@@ -8,7 +8,6 @@ import (
 	"github.com/cjtim/cjtim-backend-go/models"
 	"github.com/cjtim/cjtim-backend-go/pkg/airvisual"
 	"github.com/cjtim/cjtim-backend-go/pkg/files"
-	"github.com/cjtim/cjtim-backend-go/pkg/images"
 	"github.com/cjtim/cjtim-backend-go/pkg/line"
 	"github.com/cjtim/cjtim-backend-go/pkg/utils"
 	"github.com/gofiber/fiber/v2"
@@ -50,19 +49,13 @@ func Webhook(c *fiber.Ctx) error {
 			return nil
 		case "file":
 			message := event[0].Message.(*linebot.FileMessage)
-			fileByte, fileType, err := line.GetContent(message.ID)
-			if err != nil {
-				return err
-			}
-			ext, err := utils.ContentTypeToExtension(fileType)
-			if err != nil {
-				return nil
-			}
-			_, err = files.Add(message.ID+ext[0], fileByte, event[0].Source.UserID,
+			_, err = files.AddFromLine(message.ID, event[0].Source.UserID,
 				c.Locals("db").(*models.Models))
 			return err
 		case "image":
-			_, err = images.Add(event[0], c.Locals("db").(*models.Models))
+			message := event[0].Message.(*linebot.ImageMessage)
+			_, err = files.AddFromLine(message.ID, event[0].Source.UserID,
+				c.Locals("db").(*models.Models))
 			return err
 		}
 	}
