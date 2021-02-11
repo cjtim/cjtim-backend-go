@@ -10,12 +10,14 @@ steps:
   - name: "golang"
     args: ["go", "get", "-d", "-v"]
   - name: "golang"
-    args: ["go", "test", "-v"]
+    args: ["go", "get", "github.com/joho/godotenv/cmd/godotenv"]
+  - name: "golang"
+    args: ["godotenv", "go", "test", "-v", "./..."]
   - name: "golang"
     args: ["rm", "-rf", ".env"]
+  # Build
   - name: "golang"
     args: ["go", "build", "-o", "./main"]
-  # Build
   - name: "gcr.io/cloud-builders/docker"
     args:
       - "build"
