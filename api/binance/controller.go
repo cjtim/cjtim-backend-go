@@ -1,6 +1,8 @@
 package binance
 
 import (
+	"context"
+
 	"github.com/cjtim/cjtim-backend-go/datasource/collections"
 	"github.com/cjtim/cjtim-backend-go/models"
 	"github.com/gofiber/fiber/v2"
@@ -26,9 +28,7 @@ func UpdatePrice(c *fiber.Ctx) error {
 	}
 	user := c.Locals("user").(*linebot.UserProfileResponse)
 	models := c.Locals("db").(*models.Models)
-	_, err = models.Update("binance", data, bson.M{"lineUid": user.UserID})
-	if err != nil {
-		return err
-	}
+	collection := models.Client.Database("production").Collection("binance")
+	collection.FindOneAndReplace(context.TODO(), bson.M{"lineUid": user.UserID}, data)
 	return c.SendStatus(200)
 }
