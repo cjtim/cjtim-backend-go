@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/cjtim/cjtim-backend-go/api/binance"
 	"github.com/cjtim/cjtim-backend-go/api/files"
 	line_controllers "github.com/cjtim/cjtim-backend-go/api/line"
 	"github.com/cjtim/cjtim-backend-go/api/urls"
@@ -24,6 +25,7 @@ func Route(r *fiber.App) {
 	filesRouteSetup(r)
 	usersRouteSetup(r)
 	urlsRouteSetup(r)
+	binanceRouteSetup(r)
 }
 
 func filesRouteSetup(r *fiber.App) {
@@ -43,4 +45,10 @@ func urlsRouteSetup(r *fiber.App) {
 	urlsRoute.Post("/add", urls.Add)
 	urlsRoute.Get("/list", urls.List)
 	urlsRoute.Post("/delete", urls.Delete)
+}
+
+func binanceRouteSetup(r *fiber.App) {
+	binanceRoute := r.Group("/binance", middlewares.LiffVerify)
+	binanceRoute.Get("/get", binance.Get)
+	binanceRoute.Post("/update", binance.UpdatePrice)
 }
