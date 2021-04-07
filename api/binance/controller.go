@@ -24,18 +24,34 @@ func Get(c *fiber.Ctx) error {
 	data := collections.BinanceScheama{}
 	user := c.Locals("user").(*linebot.UserProfileResponse)
 	models := c.Locals("db").(*models.Models)
-	err := models.FindOne("binance", &data, bson.M{"lineUid": user.UserID})
+	collection := models.Client.Database("production").Collection("binance")
+	result := collection.FindOne(context.TODO(), bson.M{"lineUid": user.UserID})
+	err := result.Decode(&data)
 	if err != nil {
-		return err
+		newUser := collections.BinanceScheama{
+			LineUID:          user.UserID,
+			LineNotifyToken:  "",
+			BinanceApiKey:    "",
+			BinanceSecretKey: "",
+			Prices:           map[string]interface{}{},
+		}
+		collection.InsertOne(context.TODO(), newUser)
+		result := collection.FindOne(context.TODO(), bson.M{"lineUid": user.UserID})
+		err := result.Decode(&data)
+		if err != nil {
+			return nil
+		}
 	}
 	respData := map[string]interface{}{}
 	dataByte, _ := json.Marshal(data)
 	json.Unmarshal(dataByte, &respData)
-	binanceAccount, err := getBinanceAccount(data.BinanceApiKey, data.BinanceSecretKey)
-	if err != nil {
-		return err
+	if data.BinanceApiKey != "" && data.BinanceSecretKey != "" {
+		binanceAccount, err := getBinanceAccount(data.BinanceApiKey, data.BinanceSecretKey)
+		if err != nil {
+			return err
+		}
+		respData["balances"] = binanceAccount["balances"]
 	}
-	respData["balances"] = binanceAccount["balances"]
 	return c.JSON(respData)
 }
 func UpdatePrice(c *fiber.Ctx) error {
