@@ -8,10 +8,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/cjtim/cjtim-backend-go/datasource/collections"
 	"github.com/cjtim/cjtim-backend-go/models"
+	"github.com/cjtim/cjtim-backend-go/pkg/utils"
 	"github.com/go-resty/resty/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/line/line-bot-sdk-go/linebot"
@@ -64,6 +66,25 @@ func UpdatePrice(c *fiber.Ctx) error {
 	models := c.Locals("db").(*models.Models)
 	collection := models.Client.Database("production").Collection("binance")
 	collection.FindOneAndReplace(context.TODO(), bson.M{"lineUid": user.UserID}, data)
+	return c.SendStatus(200)
+}
+
+func Cronjob(c *fiber.Ctx) error {
+	headers := utils.HeadersToMapStr(c)
+	if headers["Authorization"] != os.Getenv("SECRET_PASSPHRASE") {
+		return c.SendStatus(fiber.StatusForbidden)
+	}
+	data := []collections.BinanceScheama{}
+	models := c.Locals("db").(*models.Models)
+	err := models.FindAll("binance", &data, nil)
+	if err != nil {
+		return err
+	}
+	for _, user := range data {
+		restyClient.R().SetHeader("Authorization", os.Getenv("SECRET_PASSPHRASE")).SetBody(user).Post(
+			os.Getenv("MICROSERVICE_BINANCE_LINE_NOTIFY_URL"),
+		)
+	}
 	return c.SendStatus(200)
 }
 

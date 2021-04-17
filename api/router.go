@@ -21,6 +21,7 @@ func Route(r *fiber.App) {
 	})
 	r.Post("/line/webhook", line_controllers.Webhook)
 	r.Get("/line/weatherBroadcast", line_controllers.WeatherBroadcast)
+	r.Get("/binance/cronjob", binance.Cronjob)
 	// r.Post("/post", controllers.PostController)
 	filesRouteSetup(r)
 	usersRouteSetup(r)
