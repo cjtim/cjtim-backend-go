@@ -36,6 +36,7 @@ func Get(c *fiber.Ctx) error {
 			BinanceApiKey:    "",
 			BinanceSecretKey: "",
 			Prices:           map[string]interface{}{},
+			LineNotifyTime:   5,
 		}
 		collection.InsertOne(context.TODO(), newUser)
 		result := collection.FindOne(context.TODO(), bson.M{"lineUid": user.UserID})
@@ -81,9 +82,14 @@ func Cronjob(c *fiber.Ctx) error {
 		return err
 	}
 	for _, user := range data {
-		restyClient.R().SetHeader("Authorization", os.Getenv("SECRET_PASSPHRASE")).SetBody(user).Post(
-			os.Getenv("MICROSERVICE_BINANCE_LINE_NOTIFY_URL"),
-		)
+		userTime := user.LineNotifyTime % 60
+		currentMinute := time.Now().Minute()
+		needNotify := (currentMinute % int(userTime)) == 0
+		if needNotify {
+			restyClient.R().SetHeader("Authorization", os.Getenv("SECRET_PASSPHRASE")).SetBody(user).Post(
+				os.Getenv("MICROSERVICE_BINANCE_LINE_NOTIFY_URL"),
+			)
+		}
 	}
 	return c.SendStatus(200)
 }
