@@ -39,6 +39,7 @@ func filesRouteSetup(r *fiber.App) {
 func usersRouteSetup(r *fiber.App) {
 	usersRoute := r.Group("/users", middlewares.LiffVerify)
 	usersRoute.Get("/me", users.Me)
+	usersRoute.Post("/update", users.Update)
 }
 
 func urlsRouteSetup(r *fiber.App) {
