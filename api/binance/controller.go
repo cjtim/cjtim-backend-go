@@ -2,17 +2,12 @@ package binance
 
 import (
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
-	"errors"
-	"fmt"
 	"os"
 	"time"
 
 	"github.com/cjtim/cjtim-backend-go/datasource/collections"
 	"github.com/cjtim/cjtim-backend-go/models"
+	"github.com/cjtim/cjtim-backend-go/pkg/binance"
 	"github.com/cjtim/cjtim-backend-go/pkg/utils"
 	"github.com/go-resty/resty/v2"
 	"github.com/gofiber/fiber/v2"
@@ -28,9 +23,9 @@ func Get(c *fiber.Ctx) error {
 	models := c.Locals("db").(*models.Models)
 	collection := models.Client.Database("production").Collection("binance")
 	result := collection.FindOne(context.TODO(), bson.M{"lineUid": user.UserID})
-	err := result.Decode(&data)
-	if err != nil {
-		newUser := collections.BinanceScheama{
+	userNotFound := result.Decode(&data)
+	if userNotFound != nil {
+		data = collections.BinanceScheama{
 			LineUID:          user.UserID,
 			LineNotifyToken:  "",
 			BinanceApiKey:    "",
@@ -38,25 +33,35 @@ func Get(c *fiber.Ctx) error {
 			Prices:           map[string]interface{}{},
 			LineNotifyTime:   5,
 		}
-		collection.InsertOne(context.TODO(), newUser)
+		collection.InsertOne(context.TODO(), data)
 		result := collection.FindOne(context.TODO(), bson.M{"lineUid": user.UserID})
 		err := result.Decode(&data)
 		if err != nil {
 			return nil
 		}
 	}
-	respData := map[string]interface{}{}
-	dataByte, _ := json.Marshal(data)
-	json.Unmarshal(dataByte, &respData)
-	if data.BinanceApiKey != "" && data.BinanceSecretKey != "" {
-		binanceAccount, err := getBinanceAccount(data.BinanceApiKey, data.BinanceSecretKey)
+	return c.JSON(data)
+}
+
+func GetWallet(c *fiber.Ctx) error {
+	user := c.Locals("user").(*linebot.UserProfileResponse)
+	models := c.Locals("db").(*models.Models)
+	userBinance := collections.BinanceScheama{}
+	err := models.FindOne("binance", &userBinance, bson.M{"lineUid": user.UserID})
+	if err != nil {
+		return nil
+	}
+	hasBinanceAPIKey := userBinance.BinanceApiKey != "" && userBinance.BinanceSecretKey != ""
+	if hasBinanceAPIKey {
+		binanceAccount, err := binance.GetBinanceAccount(userBinance.BinanceApiKey, userBinance.BinanceSecretKey)
 		if err != nil {
 			return err
 		}
-		respData["balances"] = binanceAccount["balances"]
+		return c.JSON(binanceAccount["balances"])
 	}
-	return c.JSON(respData)
+	return c.JSON([]interface{}{})
 }
+
 func UpdatePrice(c *fiber.Ctx) error {
 	data := collections.BinanceScheama{}
 	err := c.BodyParser(&data)
@@ -92,31 +97,4 @@ func Cronjob(c *fiber.Ctx) error {
 		}
 	}
 	return c.SendStatus(200)
-}
-
-func ComputeHmac256(message string, secret string) string {
-	key := []byte(secret)
-	h := hmac.New(sha256.New, key)
-	h.Write([]byte(message))
-	return hex.EncodeToString(h.Sum(nil))
-}
-
-func getBinanceAccount(apiKey string, secretKey string) (map[string]interface{}, error) {
-	timeNow := time.Now().UnixNano() / int64(time.Millisecond)
-	signature := ComputeHmac256("timestamp="+fmt.Sprint(timeNow), secretKey)
-	url := "https://api.binance.com/api/v3/account?timestamp=" + fmt.Sprint(timeNow)
-	url += "&signature=" + signature
-	resp, err := restyClient.R().SetHeader("X-MBX-APIKEY", apiKey).Get(url)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode() != 200 {
-		return nil, errors.New(string(resp.Body()))
-	}
-	binanceAccount := map[string]interface{}{}
-	err = json.Unmarshal(resp.Body(), &binanceAccount)
-	if err != nil {
-		return nil, err
-	}
-	return binanceAccount, nil
 }

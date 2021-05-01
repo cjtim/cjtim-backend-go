@@ -52,5 +52,6 @@ func urlsRouteSetup(r *fiber.App) {
 func binanceRouteSetup(r *fiber.App) {
 	binanceRoute := r.Group("/binance", middlewares.LiffVerify)
 	binanceRoute.Get("/get", binance.Get)
+	binanceRoute.Get("/wallet", binance.GetWallet)
 	binanceRoute.Post("/update", binance.UpdatePrice)
 }
