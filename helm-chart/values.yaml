@@ -1,0 +1,32 @@
+replicaCount: 1
+
+image:
+  repository: registry.gitlab.com/cjtim/cjtim-backend-go
+  pullPolicy: IfNotPresent
+
+service:
+  name: cjtim-backend-go
+  type: NodePort
+  externalPort: 8080
+  internalPort: 8080
+
+resources:
+  limits:
+    cpu: 300m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+env:
+  PORT: "tmp"
+  MONGO_URI: "tmp"
+  MONGO_DB: "tmp"
+  GCLOUD_BUCKET_NAME: "tmp"
+  LINE_CHANNEL_SECRET: "tmp"
+  LINE_CHANNEL_ACCESS_TOKEN: "tmp"
+  REBRANDLY_API: "tmp"
+  REBRANDLY_WORDSPACE: "tmp"
+  AIR_API_KEY: "tmp"
+  SECRET_PASSPHRASE: "tmp"
+  MICROSERVICE_BINANCE_LINE_NOTIFY_URL: "tmp"
