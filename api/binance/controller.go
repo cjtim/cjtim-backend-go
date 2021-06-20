@@ -87,9 +87,18 @@ func Cronjob(c *fiber.Ctx) error {
 		return err
 	}
 	for _, user := range data {
+		needNotify := false 
 		userTime := user.LineNotifyTime % 60
 		currentMinute := time.Now().Minute()
-		needNotify := (currentMinute % int(userTime)) == 0
+		if (userTime == 0) {
+			if (currentMinute == 0) {
+				needNotify = true
+			} else {
+				needNotify = false
+			}
+		} else {
+			needNotify = (currentMinute % int(userTime)) == 0
+		}
 		if needNotify {
 			restyClient.R().SetHeader("Authorization", os.Getenv("SECRET_PASSPHRASE")).SetBody(user).Post(
 				os.Getenv("MICROSERVICE_BINANCE_LINE_NOTIFY_URL"),
