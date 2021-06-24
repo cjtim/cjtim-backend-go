@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/cjtim/cjtim-backend-go/models"
 	"github.com/cjtim/cjtim-backend-go/pkg/airvisual"
 	"github.com/cjtim/cjtim-backend-go/pkg/files"
 	"github.com/cjtim/cjtim-backend-go/pkg/line"
@@ -49,13 +48,11 @@ func Webhook(c *fiber.Ctx) error {
 			return nil
 		case "file":
 			message := event[0].Message.(*linebot.FileMessage)
-			_, err = files.AddFromLine(message.ID, event[0].Source.UserID,
-				c.Locals("db").(*models.Models))
+			_, err = files.AddFromLine(message.ID, event[0].Source.UserID)
 			return err
 		case "image":
 			message := event[0].Message.(*linebot.ImageMessage)
-			_, err = files.AddFromLine(message.ID, event[0].Source.UserID,
-				c.Locals("db").(*models.Models))
+			_, err = files.AddFromLine(message.ID, event[0].Source.UserID)
 			return err
 		}
 	}

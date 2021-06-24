@@ -4,11 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cjtim/cjtim-backend-go/datasource/collections"
+	"github.com/cjtim/cjtim-backend-go/repository"
 )
 
 func Test_Cron(t *testing.T) {
-	user := collections.BinanceScheama{
+	user := repository.BinanceScheama{
 		LineNotifyTime: int64(time.Now().Minute()),
 	}
 	userTime := (user.LineNotifyTime) % 60

@@ -5,10 +5,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/cjtim/cjtim-backend-go/datasource/collections"
-	"github.com/cjtim/cjtim-backend-go/models"
 	"github.com/cjtim/cjtim-backend-go/pkg/binance"
 	"github.com/cjtim/cjtim-backend-go/pkg/utils"
+	"github.com/cjtim/cjtim-backend-go/repository"
 	"github.com/go-resty/resty/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/line/line-bot-sdk-go/linebot"
@@ -18,14 +17,13 @@ import (
 var restyClient = resty.New()
 
 func Get(c *fiber.Ctx) error {
-	data := collections.BinanceScheama{}
+	data := repository.BinanceScheama{}
 	user := c.Locals("user").(*linebot.UserProfileResponse)
-	models := c.Locals("db").(*models.Models)
-	collection := models.Client.Database("production").Collection("binance")
+	collection := repository.DB.Collection("binance")
 	result := collection.FindOne(context.TODO(), bson.M{"lineUid": user.UserID})
 	userNotFound := result.Decode(&data)
 	if userNotFound != nil {
-		data = collections.BinanceScheama{
+		data = repository.BinanceScheama{
 			LineUID:          user.UserID,
 			LineNotifyToken:  "",
 			BinanceApiKey:    "",
@@ -45,12 +43,14 @@ func Get(c *fiber.Ctx) error {
 
 func GetWallet(c *fiber.Ctx) error {
 	user := c.Locals("user").(*linebot.UserProfileResponse)
-	models := c.Locals("db").(*models.Models)
-	userBinance := collections.BinanceScheama{}
-	err := models.FindOne("binance", &userBinance, bson.M{"lineUid": user.UserID})
+	userBinance := repository.BinanceScheama{}
+	collection := repository.DB.Collection("binance")
+	data := collection.FindOne(context.TODO(), bson.M{"lineUid": user.UserID})
+	err := data.Decode(&userBinance)
 	if err != nil {
 		return nil
 	}
+
 	hasBinanceAPIKey := userBinance.BinanceApiKey != "" && userBinance.BinanceSecretKey != ""
 	if hasBinanceAPIKey {
 		binanceAccount, err := binance.GetBinanceAccount(userBinance.BinanceApiKey, userBinance.BinanceSecretKey)
@@ -63,14 +63,13 @@ func GetWallet(c *fiber.Ctx) error {
 }
 
 func UpdatePrice(c *fiber.Ctx) error {
-	data := collections.BinanceScheama{}
+	data := repository.BinanceScheama{}
 	err := c.BodyParser(&data)
 	if err != nil {
 		return err
 	}
 	user := c.Locals("user").(*linebot.UserProfileResponse)
-	models := c.Locals("db").(*models.Models)
-	collection := models.Client.Database("production").Collection("binance")
+	collection := repository.DB.Collection("binance")
 	collection.FindOneAndReplace(context.TODO(), bson.M{"lineUid": user.UserID}, data)
 	return c.SendStatus(200)
 }
@@ -80,21 +79,23 @@ func Cronjob(c *fiber.Ctx) error {
 	if headers["Authorization"] != os.Getenv("SECRET_PASSPHRASE") {
 		return c.SendStatus(fiber.StatusForbidden)
 	}
-	data := []collections.BinanceScheama{}
-	models := c.Locals("db").(*models.Models)
-	err := models.FindAll("binance", &data, nil)
+	collection := repository.DB.Collection("binance")
+	data := &[]repository.BinanceScheama{}
+	cur, err := collection.Find(context.TODO(), bson.M{})
 	if err != nil {
 		return err
 	}
-	for _, user := range data {
+	err = cur.All(context.TODO(), data)
+	if err != nil {
+		return err
+	}
+	for _, user := range *data {
 		needNotify := false 
 		userTime := user.LineNotifyTime % 60
 		currentMinute := time.Now().Minute()
 		if (userTime == 0) {
 			if (currentMinute == 0) {
 				needNotify = true
-			} else {
-				needNotify = false
 			}
 		} else {
 			needNotify = (currentMinute % int(userTime)) == 0

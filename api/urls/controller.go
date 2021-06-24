@@ -1,12 +1,14 @@
 package urls
 
 import (
-	"github.com/cjtim/cjtim-backend-go/datasource/collections"
-	"github.com/cjtim/cjtim-backend-go/models"
+	"context"
+
 	"github.com/cjtim/cjtim-backend-go/pkg/rebrandly"
+	"github.com/cjtim/cjtim-backend-go/repository"
 	"github.com/gofiber/fiber/v2"
 	"github.com/line/line-bot-sdk-go/linebot"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type URLAddBody struct {
@@ -27,10 +29,9 @@ func Add(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	m := c.Locals("db").(*models.Models)
 	resp.LineUID = user.UserID
-	insertID, err := m.InsertOne("urls", resp)
-	resp.ID = insertID
+	insertID, err := repository.DB.Collection("urls").InsertOne(context.TODO(), resp)
+	resp.ID = insertID.InsertedID.(primitive.ObjectID)
 	if err != nil {
 		return err
 	}
@@ -38,10 +39,13 @@ func Add(c *fiber.Ctx) error {
 }
 
 func List(c *fiber.Ctx) error {
-	m := c.Locals("db").(*models.Models)
-	urls := &[]collections.URLScheama{}
+	urls := &[]repository.URLScheama{}
 	user := c.Locals("user").(*linebot.UserProfileResponse)
-	err := m.FindAll("urls", urls, bson.M{"lineUid": user.UserID})
+	data, err := repository.DB.Collection("urls").Find(context.TODO(),bson.M{"lineUid": user.UserID})
+	if err != nil {
+		return err
+	}
+	err = data.All(context.TODO() ,urls)
 	if err != nil {
 		return err
 	}
@@ -51,15 +55,16 @@ func List(c *fiber.Ctx) error {
 }
 
 func Delete(c *fiber.Ctx) error {
-	m := c.Locals("db").(*models.Models)
 	user := c.Locals("user").(*linebot.UserProfileResponse)
+	collection := repository.DB.Collection("urls")
 	body := &URLDeleteBody{}
 	err := c.BodyParser(body)
 	if err != nil {
 		return err
 	}
-	url := &collections.URLScheama{}
-	err = m.FindOne("urls", url, bson.M{"lineUid": user.UserID, "shortUrl": body.ShortUrl})
+	url := &repository.URLScheama{}
+	data := collection.FindOne(context.TODO(), bson.M{"lineUid": user.UserID, "shortUrl": body.ShortUrl})
+	err = data.Decode(&url)
 	if err != nil {
 		return err
 	}
@@ -67,9 +72,12 @@ func Delete(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	m.Destroy("urls", bson.M{
+	_, err = collection.DeleteMany(context.TODO(), bson.M{
 		"shortUrl": body.ShortUrl,
 		"lineUid":  user.UserID,
 	})
+	if err != nil {
+		return err
+	}
 	return nil
 }

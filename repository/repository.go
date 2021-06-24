@@ -1,18 +1,18 @@
-package datasource
+package repository
 
 import (
 	"context"
 	"os"
 
-	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var _ = godotenv.Load()
+var (
+	Client =  &mongo.Client{}
+	DB = &mongo.Database{}
+)
 
-// MongoClient for connect MongoDB
-// GoRoutine
 func MongoClient() (*mongo.Client, error) {
 	client, err := mongo.NewClient(options.Client().ApplyURI(os.Getenv("MONGO_URI")))
 	if err != nil {

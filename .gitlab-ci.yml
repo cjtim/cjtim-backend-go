@@ -1,0 +1,42 @@
+variables:
+  REPO_NAME: gitlab.com/$CI_PROJECT_PATH
+  DOCKER_IMAGE_TAG: $CI_REGISTRY/$CI_PROJECT_PATH
+  TAG: $CI_COMMIT_SHORT_SHA
+
+before_script:
+  - mkdir -p $GOPATH/src/$(dirname $REPO_NAME)
+  - ln -svf $CI_PROJECT_DIR $GOPATH/src/$REPO_NAME
+  - cd $GOPATH/src/$REPO_NAME
+
+stages:
+  - compile
+  - build-container
+  - deploy
+
+compile:
+  stage: compile
+  image: golang:latest
+  script:
+    - go build -o ./main
+  variables:
+    GOOS: linux
+    GOARCH: amd64
+    CGO_ENABLED: 0
+  artifacts:
+    paths:
+      - main
+  rules:
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+build-container:
+  stage: build-container
+  image: docker:19
+  services:
+    - docker:19-dind
+  script:
+    - docker build -t $DOCKER_IMAGE_TAG -f Dockerfile_cloudbuild .
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker push $DOCKER_IMAGE_TAG
+  dependencies:
+    - compile
