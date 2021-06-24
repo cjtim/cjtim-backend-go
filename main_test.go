@@ -23,7 +23,7 @@ func Test_Route_Home(t *testing.T) {
 }
 
 func Test_Route_Ping(t *testing.T) {
-	resp, err := app.Test(httptest.NewRequest("GET", "/ping", nil))
+	resp, err := app.Test(httptest.NewRequest("GET", "/health", nil))
 	utils.AssertEqual(t, nil, err, "is error?")
 	utils.AssertEqual(t, 200, resp.StatusCode, "Status code")
 	body, err := ioutil.ReadAll(resp.Body)
