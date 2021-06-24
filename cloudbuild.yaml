@@ -24,7 +24,7 @@ steps:
       - "-t"
       - "gcr.io/$PROJECT_ID/$REPO_NAME-$BRANCH_NAME:$SHORT_SHA"
       - "-f"
-      - "Dockerfile_cloudbuild"
+      - "ci.Dockerfile"
       - "."
   # Push
   - name: "gcr.io/cloud-builders/docker"

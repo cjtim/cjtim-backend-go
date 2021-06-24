@@ -1,6 +1,6 @@
 variables:
   REPO_NAME: gitlab.com/$CI_PROJECT_PATH
-  DOCKER_IMAGE_TAG: $CI_REGISTRY/$CI_PROJECT_PATH
+  DOCKER_IMAGE_TAG: $CI_REGISTRY/$CI_PROJECT_PATH-$CI_COMMIT_BRANCH
   TAG: $CI_COMMIT_SHORT_SHA
 
 before_script:
@@ -11,7 +11,6 @@ before_script:
 stages:
   - compile
   - build-container
-  - deploy
 
 compile:
   stage: compile
@@ -25,9 +24,9 @@ compile:
   artifacts:
     paths:
       - main
-  rules:
-    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  # rules:
+  #   - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+  #   - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 build-container:
   stage: build-container
@@ -35,8 +34,11 @@ build-container:
   services:
     - docker:19-dind
   script:
-    - docker build -t $DOCKER_IMAGE_TAG -f Dockerfile_cloudbuild .
+    - docker build -t $DOCKER_IMAGE_TAG:$CI_COMMIT_SHORT_SHA -f ci.Dockerfile .
+    - docker tag $DOCKER_IMAGE_TAG:$CI_COMMIT_SHORT_SHA $DOCKER_IMAGE_TAG:latest
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push $DOCKER_IMAGE_TAG
+    - docker push $DOCKER_IMAGE_TAG:latest
+    - docker logout $CI_REGISTRY
   dependencies:
     - compile
