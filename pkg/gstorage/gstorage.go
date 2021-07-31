@@ -26,7 +26,7 @@ type Bucket struct {
 
 func GetClient() (Bucket, error) {
 	ctx := context.Background()
-	var client, err = storage.NewClient(ctx, option.WithCredentialsFile("serviceAcc.json"))
+	var client, err = storage.NewClient(ctx, option.WithCredentialsFile("./config/serviceAcc.json"))
 	if err != nil {
 		log.Fatalf("Failed to create client: %v", err)
 		return Bucket{}, err

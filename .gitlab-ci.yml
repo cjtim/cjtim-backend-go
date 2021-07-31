@@ -1,0 +1,90 @@
+stages:
+  - compile
+  - test
+  - build-container
+  - deploy
+
+variables:
+  REPO_NAME: gitlab.com/$CI_PROJECT_PATH
+  DOCKER_IMAGE_TAG: $CI_REGISTRY/$CI_PROJECT_PATH
+  TAG: $CI_COMMIT_SHORT_SHA
+  DOCKER_HOST: tcp://docker:2375/
+  DOCKER_DRIVER: overlay2
+
+.go:
+  image: golang:1.16-alpine3.14
+  before_script:
+    - mkdir -p $GOPATH/src/$(dirname $REPO_NAME)
+    - ln -svf $CI_PROJECT_DIR $GOPATH/src/$REPO_NAME
+    - cd $GOPATH/src/$REPO_NAME
+  variables:
+    GOOS: linux
+    GOARCH: amd64
+    CGO_ENABLED: 0
+  cache:
+    key: $CI_JOB_NAME
+    when: always
+    paths:
+      - $GOPATH/pkg/mod
+
+compile:
+  stage: compile
+  extends: .go
+  script:
+    - go mod download
+    - go build -o ./main
+  artifacts:
+    paths:
+      - main
+  rules: &ci_rule
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+    - if: "$CI_COMMIT_BRANCH =~ /^(test)+/"
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+test:
+  stage: test
+  image: docker/compose:latest
+  services:
+    - docker:19-dind
+  script:
+    - docker-compose -f $COMPOSE_FILE up -d
+    - |-
+      docker run --rm \
+      --network tools_default \
+      -e MONGO_URI=$MONGO_URI \
+      -v $(pwd):/project \
+      -w /project \
+      golang:1.16-alpine3.14 \
+      sh -c "apk add --no-cache gcc musl-dev && go test -coverprofile=coverage.out ./..."
+    - docker-compose -f $COMPOSE_FILE down
+  variables:
+    COMPOSE_FILE: "tools/docker-compose.yml"
+    MONGO_URI: "mongodb://mongodb:mongodb@mongodb"
+  rules: *ci_rule
+
+build-container:
+  stage: build-container
+  image: docker:19
+  services:
+    - docker:19-dind
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $DOCKER_IMAGE_TAG:$CI_COMMIT_SHORT_SHA -f ci.Dockerfile .
+    - docker tag $DOCKER_IMAGE_TAG:$CI_COMMIT_SHORT_SHA $DOCKER_IMAGE_TAG:latest
+    - docker push $DOCKER_IMAGE_TAG
+    - docker push $DOCKER_IMAGE_TAG:latest
+    - docker logout $CI_REGISTRY
+  dependencies:
+    - compile
+  rules:
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+    - if: "$CI_COMMIT_BRANCH =~ /^(test)+/"
+
+deploy:
+  stage: deploy
+  trigger:
+    project: cjtim/my-server
+    strategy: depend
+  rules:
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+    - if: "$CI_COMMIT_BRANCH =~ /^(test)+/"
