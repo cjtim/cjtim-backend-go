@@ -1,11 +1,11 @@
 package files
 
 import (
+	"context"
 	"io/ioutil"
 
-	"github.com/cjtim/cjtim-backend-go/datasource/collections"
-	"github.com/cjtim/cjtim-backend-go/models"
 	"github.com/cjtim/cjtim-backend-go/pkg/files"
+	"github.com/cjtim/cjtim-backend-go/repository"
 	"github.com/gofiber/fiber/v2"
 	"github.com/line/line-bot-sdk-go/linebot"
 	"go.mongodb.org/mongo-driver/bson"
@@ -25,16 +25,20 @@ func Upload(c *fiber.Ctx) error {
 		return err
 	}
 	user := c.Locals("user").(*linebot.UserProfileResponse)
-	models := c.Locals("db").(*models.Models)
-	files.Add(file.Filename, bdata, user.UserID, models)
+	files.Add(file.Filename, bdata, user.UserID)
 	return nil
 }
 
 func List(c *fiber.Ctx) error {
 	user := c.Locals("user").(*linebot.UserProfileResponse)
-	models := c.Locals("db").(*models.Models)
-	files := &[]collections.FileScheama{}
-	if err := models.FindAll("files", files, bson.M{"lineUid": user.UserID}); err != nil {
+	files := &[]repository.FileScheama{}
+	collection := repository.DB.Collection("files")
+	cur, err := collection.Find(context.TODO(), bson.M{"lineUid": user.UserID})
+	if err != nil {
+		return err
+	}
+	err = cur.All(context.TODO(), files)
+	if err != nil {
 		return err
 	}
 	return c.JSON(fiber.Map{
@@ -43,7 +47,6 @@ func List(c *fiber.Ctx) error {
 }
 
 func Delete(c *fiber.Ctx) error {
-	models := c.Locals("db").(*models.Models)
 	user := c.Locals("user").(*linebot.UserProfileResponse)
 	body := &struct {
 		Filename string `json:"fileName"`
@@ -52,7 +55,7 @@ func Delete(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	err = files.Delete(body.Filename, user.UserID, models)
+	err = files.Delete(body.Filename, user.UserID)
 	if err != nil {
 		return err
 	}

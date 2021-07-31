@@ -1,17 +1,18 @@
 package files
 
 import (
-	"github.com/cjtim/cjtim-backend-go/datasource/collections"
-	"github.com/cjtim/cjtim-backend-go/models"
+	"context"
+
 	"github.com/cjtim/cjtim-backend-go/pkg/gstorage"
 	"github.com/cjtim/cjtim-backend-go/pkg/line"
 	"github.com/cjtim/cjtim-backend-go/pkg/rebrandly"
 	"github.com/cjtim/cjtim-backend-go/pkg/utils"
+	"github.com/cjtim/cjtim-backend-go/repository"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 // Add - Upload file and save to DB
-func Add(fullFileName string, byteData []byte, lineUID string, m *models.Models) (*collections.FileScheama, error) {
+func Add(fullFileName string, byteData []byte, lineUID string) (*repository.FileScheama, error) {
 	Gclient, err := gstorage.GetClient()
 	defer Gclient.Client.Close()
 	if err != nil {
@@ -26,12 +27,12 @@ func Add(fullFileName string, byteData []byte, lineUID string, m *models.Models)
 	if err != nil {
 		return nil, err
 	}
-	data := &collections.FileScheama{
+	data := &repository.FileScheama{
 		FileName: fullFileName,
 		URL:      *shortURL,
 		LineUID:  lineUID,
 	}
-	_, err = m.InsertOne("files", data)
+	_, err = repository.DB.Collection("files").InsertOne(context.TODO(), data)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +40,7 @@ func Add(fullFileName string, byteData []byte, lineUID string, m *models.Models)
 }
 
 // AddFromLine - Contents being upload via line chat will parse here
-func AddFromLine(messageID string, lineUID string, m *models.Models) (*collections.FileScheama, error) {
+func AddFromLine(messageID string, lineUID string) (*repository.FileScheama, error) {
 	fileByte, fileType, err := line.GetContent(messageID)
 	if err != nil {
 		return nil, err
@@ -51,13 +52,14 @@ func AddFromLine(messageID string, lineUID string, m *models.Models) (*collectio
 	if err != nil {
 		return nil, err
 	}
-	return Add(messageID+ext[0], fileByte, lineUID, m)
+	return Add(messageID+ext[0], fileByte, lineUID)
 }
 
 // Delete - Remove file from storage and rebrandly
-func Delete(fullFileName string, lineUID string, m *models.Models) error {
-	file := &collections.FileScheama{}
-	err := m.FindOne("files", file, bson.M{"lineUid": lineUID, "fileName": fullFileName})
+func Delete(fullFileName string, lineUID string) error {
+	file := &repository.FileScheama{}
+	result := repository.DB.Collection("files").FindOne(context.TODO(), bson.M{"lineUid": lineUID, "fileName": fullFileName})
+	err := result.Decode(&file)
 	if err != nil {
 		return err
 	}
@@ -76,7 +78,7 @@ func Delete(fullFileName string, lineUID string, m *models.Models) error {
 	if err != nil {
 		return err
 	}
-	err = m.Destroy("files", bson.M{"fileName": fullFileName, "lineUid": lineUID})
+	_, err = repository.DB.Collection("files").DeleteOne(context.TODO(), bson.M{"fileName": fullFileName, "lineUid": lineUID})
 	if err != nil {
 		return err
 	}

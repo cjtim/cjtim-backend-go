@@ -16,13 +16,12 @@ func Route(r *fiber.App) {
 	r.Get("/", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"msg": "Hello, world"})
 	})
-	r.Get("/ping", func(c *fiber.Ctx) error {
+	r.Get("/health", func(c *fiber.Ctx) error {
 		return c.SendString("pong")
 	})
 	r.Post("/line/webhook", line_controllers.Webhook)
 	r.Get("/line/weatherBroadcast", line_controllers.WeatherBroadcast)
-	r.Get("/binance/cronjob", binance.Cronjob)
-	// r.Post("/post", controllers.PostController)
+
 	filesRouteSetup(r)
 	usersRouteSetup(r)
 	urlsRouteSetup(r)
@@ -50,8 +49,9 @@ func urlsRouteSetup(r *fiber.App) {
 }
 
 func binanceRouteSetup(r *fiber.App) {
-	binanceRoute := r.Group("/binance", middlewares.LiffVerify)
-	binanceRoute.Get("/get", binance.Get)
-	binanceRoute.Get("/wallet", binance.GetWallet)
-	binanceRoute.Post("/update", binance.UpdatePrice)
+	binanceRoute := r.Group("/binance")
+	binanceRoute.Get("/get", middlewares.LiffVerify, binance.Get)
+	binanceRoute.Get("/wallet", middlewares.LiffVerify, binance.GetWallet)
+	binanceRoute.Post("/update", middlewares.LiffVerify, binance.UpdatePrice)
+	binanceRoute.Get("/cronjob", binance.Cronjob)
 }

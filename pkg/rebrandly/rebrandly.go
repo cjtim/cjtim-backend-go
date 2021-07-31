@@ -5,7 +5,7 @@ import (
 	"errors"
 	"os"
 
-	"github.com/cjtim/cjtim-backend-go/datasource/collections"
+	"github.com/cjtim/cjtim-backend-go/repository"
 	"github.com/go-resty/resty/v2"
 	"github.com/joho/godotenv"
 )
@@ -22,7 +22,7 @@ var _ = godotenv.Load()
 var restyClient = resty.New()
 
 // Add -
-func Add(originalURL string) (*collections.URLScheama, error) {
+func Add(originalURL string) (*repository.URLScheama, error) {
 	if originalURL[:8] != "https://" && originalURL[:7] != "http://" {
 		originalURL = "http://" + originalURL
 	}
@@ -44,7 +44,7 @@ func Add(originalURL string) (*collections.URLScheama, error) {
 	if resp.StatusCode() != 200 {
 		return nil, errors.New(string(resp.Body()))
 	}
-	data := &collections.URLScheama{}
+	data := &repository.URLScheama{}
 	if err := json.Unmarshal(resp.Body(), data); err != nil {
 		return nil, err
 	}

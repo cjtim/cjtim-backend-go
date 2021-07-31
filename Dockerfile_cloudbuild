@@ -1,9 +1,0 @@
-FROM alpine:latest
-
-RUN apk update && \
-    apk add --no-cache libc6-compat
-WORKDIR /root/
-COPY . .
-
-EXPOSE 8080
-CMD ["/root/main"]

@@ -1,0 +1,20 @@
+version: "3.7"
+
+services:
+  mongodb:
+    container_name: mongodb
+    image: mongo:4.4.6
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongodb
+      MONGO_INITDB_ROOT_PASSWORD: mongodb
+
+  setup:
+    image: mongo:4.4.6
+    depends_on:
+      - mongodb
+    restart: "no"
+    volumes:
+      - ./initdb.js:/initdb.js
+    entrypoint: ["bash", "-c", "sleep 5 && mongo --nodb /initdb.js && exit"]
