@@ -43,15 +43,15 @@ func startServer() *fiber.App {
 	app.Use(func (c *fiber.Ctx) error {
 		ips := c.IPs()
 		isProxy := len(ips) > 0
-		zap.S().Info("X-REAL-IP", zap.Strings("ips", ips))
+		zap.L().Info("X-REAL-IP", zap.Strings("ips", ips))
 		if (isProxy) {
-			zap.S().Info("Request", 
+			zap.L().Info("Request", 
 				zap.String("ip", ips[len(ips)-1]),
 				zap.String("method", c.Method()),
 				zap.String("path", c.Path()),
 			)
 		} else {
-			zap.S().Info("Request", 
+			zap.L().Info("Request", 
 				zap.String("ip", c.IP()),
 				zap.String("method", c.Method()),
 				zap.String("path", c.Path()),
@@ -71,9 +71,9 @@ func setupCloseHandler() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		zap.S().Info("\r- Got SIGTERM, terminating program...")
+		zap.L().Info("Got SIGTERM, terminating program...")
 		repository.Client.Disconnect(context.TODO())
-		zap.S().Info("\r- MongoDB disconected!")
+		zap.L().Info("MongoDB disconected!")
 		os.Exit(0)
 	}()
 }

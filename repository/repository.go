@@ -26,6 +26,6 @@ func MongoClient() (*mongo.Client, error) {
 	if err := client.Ping(context.TODO(), nil); err != nil {
 		return nil, err
 	}
-	zap.S().Info("DB connected!")
+	zap.L().Info("DB connected!")
 	return client, nil
 }
