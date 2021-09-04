@@ -44,7 +44,6 @@ func RequestLog() (func (c *fiber.Ctx) error){
     return func (c *fiber.Ctx) error {
 		ips := c.IPs()
 		isProxy := len(ips) > 0
-		zap.L().Info("X-REAL-IP", zap.Strings("ips", ips))
 		if (isProxy) {
 			zap.L().Info("Request", 
 				zap.String("ip", ips[len(ips)-1]),
