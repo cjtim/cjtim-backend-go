@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -16,23 +15,26 @@ import (
 )
 
 func main() {
-	logger, _ := zap.NewProduction()
+	logger := middlewares.InitZap()
 	defer logger.Sync()
 	zap.ReplaceGlobals(logger)
+	
+	setupCloseHandler()
+
 
 	client, err := repository.MongoClient()
 	if err != nil {
-		log.Panic(err)
-		os.Exit(1)
+		zap.L().Fatal("Database start error", zap.Error(err))
 	}
 	repository.Client = client
 	repository.DB = client.Database(os.Getenv("MONGO_DB"))
+	
 	app := startServer()
 	if err := app.Listen(":8080"); err != nil {
-		log.Panicln(err)
-		os.Exit(1)
+		repository.DB.Client().Disconnect(context.TODO())
+		zap.L().Info("MongoDB disconected!")
+		zap.L().Fatal("fiber start error", zap.Error(err))
 	}
-	os.Exit(0)
 }
 
 func startServer() *fiber.App {
@@ -40,28 +42,9 @@ func startServer() *fiber.App {
 		ErrorHandler: middlewares.ErrorHandling,
 		BodyLimit:    100 * 1024 * 1024, // Limit file size to 100MB
 	})
-	app.Use(func (c *fiber.Ctx) error {
-		ips := c.IPs()
-		isProxy := len(ips) > 0
-		zap.L().Info("X-REAL-IP", zap.Strings("ips", ips))
-		if (isProxy) {
-			zap.L().Info("Request", 
-				zap.String("ip", ips[len(ips)-1]),
-				zap.String("method", c.Method()),
-				zap.String("path", c.Path()),
-			)
-		} else {
-			zap.L().Info("Request", 
-				zap.String("ip", c.IP()),
-				zap.String("method", c.Method()),
-				zap.String("path", c.Path()),
-			)
-		}
-		return c.Next()
-	}) 
+	app.Use(middlewares.RequestLog()) 
 	app.Use(middlewares.Cors())
 	api.Route(app) // setup router path
-	setupCloseHandler()
 	return app
 }
 
