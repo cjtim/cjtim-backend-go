@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -12,11 +11,15 @@ import (
 	"github.com/cjtim/cjtim-backend-go/middlewares"
 	"github.com/cjtim/cjtim-backend-go/repository"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/logger"
 	_ "github.com/joho/godotenv/autoload"
+	"go.uber.org/zap"
 )
 
 func main() {
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+	zap.ReplaceGlobals(logger)
+
 	client, err := repository.MongoClient()
 	if err != nil {
 		log.Panic(err)
@@ -37,21 +40,25 @@ func startServer() *fiber.App {
 		ErrorHandler: middlewares.ErrorHandling,
 		BodyLimit:    100 * 1024 * 1024, // Limit file size to 100MB
 	})
-	app.Use(logger.New(logger.Config{
-		Next: func(c *fiber.Ctx) bool {
-			ips := c.IPs()
-			isProxy := len(ips) > 0
-			log.Default().Printf("IPs: %s\n", ips)
-			if (isProxy) {
-				log.Default().Printf("%s - %s %s", ips[len(ips)-1], c.Method(), c.Path())
-			}
-			return isProxy
-		},
-		Output: os.Stdout,
-		Format:     "[${time}] ${ip} ${status} - ${method} ${path}\n",
-		TimeFormat: "02-Jan-2006 | 15:04:05",
-		TimeZone:   "Asia/Bangkok",
-	}))
+	app.Use(func (c *fiber.Ctx) error {
+		ips := c.IPs()
+		isProxy := len(ips) > 0
+		zap.S().Info("X-REAL-IP", zap.Strings("ips", ips))
+		if (isProxy) {
+			zap.S().Info("Request", 
+				zap.String("ip", ips[len(ips)-1]),
+				zap.String("method", c.Method()),
+				zap.String("path", c.Path()),
+			)
+		} else {
+			zap.S().Info("Request", 
+				zap.String("ip", c.IP()),
+				zap.String("method", c.Method()),
+				zap.String("path", c.Path()),
+			)
+		}
+		return c.Next()
+	}) 
 	app.Use(middlewares.Cors())
 	api.Route(app) // setup router path
 	setupCloseHandler()
@@ -64,9 +71,9 @@ func setupCloseHandler() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		fmt.Println("\r- Got SIGTERM, terminating program...")
+		zap.S().Info("\r- Got SIGTERM, terminating program...")
 		repository.Client.Disconnect(context.TODO())
-		fmt.Println("\r- MongoDB disconected!")
+		zap.S().Info("\r- MongoDB disconected!")
 		os.Exit(0)
 	}()
 }
