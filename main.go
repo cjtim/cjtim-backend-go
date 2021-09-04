@@ -10,7 +10,6 @@ import (
 
 	"github.com/cjtim/cjtim-backend-go/api"
 	"github.com/cjtim/cjtim-backend-go/middlewares"
-	"github.com/cjtim/cjtim-backend-go/pkg/utils"
 	"github.com/cjtim/cjtim-backend-go/repository"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -40,12 +39,15 @@ func startServer() *fiber.App {
 	})
 	app.Use(logger.New(logger.Config{
 		Next: func(c *fiber.Ctx) bool {
-			headers := utils.HeadersToMapStr(c)
-			if (headers["x-real-ip"] != "") {
-				log.Default().Printf("%s - %s %s", headers["x-real-ip"], c.Method(), c.Path())
+			ips := c.IPs()
+			isProxy := len(ips) > 0
+			log.Default().Printf("IPs: %s\n", ips)
+			if (isProxy) {
+				log.Default().Printf("%s - %s %s", ips[len(ips)-1], c.Method(), c.Path())
 			}
-			return headers["x-real-ip"] != ""
+			return isProxy
 		},
+		Output: os.Stdout,
 		Format:     "[${time}] ${ip} ${status} - ${method} ${path}\n",
 		TimeFormat: "02-Jan-2006 | 15:04:05",
 		TimeZone:   "Asia/Bangkok",
