@@ -42,8 +42,8 @@ func startServer() *fiber.App {
 		ErrorHandler: middlewares.ErrorHandling,
 		BodyLimit:    100 * 1024 * 1024, // Limit file size to 100MB
 	})
-	app.Use(middlewares.RequestLog()) 
 	app.Use(middlewares.Cors())
+	app.Use(middlewares.RequestLog()) 
 	api.Route(app) // setup router path
 	return app
 }
