@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: cjtim-backend-go
-          image: registry.cloud.okteto.net/cjtim/cjtim-backend-go:latest
+          image: registry.cloud.okteto.net/cjtim/cjtim-backend-go:$(TAG)
           envFrom:
             - configMapRef:
                 name: cjtim-backend-go-configmap
