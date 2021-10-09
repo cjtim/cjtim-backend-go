@@ -106,8 +106,6 @@ okteto:
     - export OKTETO_TOKEN=$(echo $OKTETO_TOKEN | base64 -d)
     - okteto namespace
     - kubectl apply -f k8s
-  variables:
-    GIT_STRATEGY: none
   rules:
     - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
     - if: "$CI_COMMIT_BRANCH =~ /^(test)+/"
