@@ -42,21 +42,19 @@ func InitZap() *zap.Logger{
 
 func RequestLog() (func (c *fiber.Ctx) error){
     return func (c *fiber.Ctx) error {
+        ip := c.IP()
 		ips := c.IPs()
 		isProxy := len(ips) > 0
 		if (isProxy) {
-			zap.L().Info("Request", 
-				zap.String("ip", ips[len(ips)-1]),
-				zap.String("method", c.Method()),
-				zap.String("path", c.Path()),
-			)
-		} else {
-			zap.L().Info("Request", 
-				zap.String("ip", c.IP()),
-				zap.String("method", c.Method()),
-				zap.String("path", c.Path()),
-			)
+            ip = ips[len(ips)-1]
 		}
-		return c.Next()
+        err := c.Next()
+        zap.L().Info("Request", 
+            zap.String("ip", ip),
+            zap.Int("status", c.Response().StatusCode()),
+            zap.String("method", c.Method()),
+            zap.String("path", c.Path()),
+        )
+		return err
 	}
 }
