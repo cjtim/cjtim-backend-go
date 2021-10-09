@@ -103,7 +103,7 @@ okteto:
     - build-container
   image: okteto/okteto:1.13.4
   script:
-    - export OKTETO_TOKEN=$OKTETO_TOKEN | base64 -d
+    - export OKTETO_TOKEN=$($OKTETO_TOKEN | base64 -d)
     - okteto namespace
     - kubectl apply -f k8s
   variables:
