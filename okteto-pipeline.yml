@@ -1,0 +1,3 @@
+deploy:
+  - okteto build -t registry.cloud.okteto.net/cjtim/cjtim-backend-go:latest
+  - kubectl apply -f k8s
