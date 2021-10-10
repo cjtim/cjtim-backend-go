@@ -13,21 +13,53 @@ spec:
         app: cjtim-backend-go
     spec:
       containers:
+        # Logging agent
+        - name: fluentd
+          image: grafana/fluent-plugin-loki:master
+          command:
+            [
+              "fluentd",
+              "-c",
+              "/fluentd/etc/fluent.conf",
+              "-p",
+              "/fluentd/plugins",
+              "--under-supervisor",
+            ]
+          resources:
+            limits:
+              cpu: 100m
+              memory: 500Mi
+          volumeMounts:
+            - name: varlog
+              mountPath: /var/log
+              readOnly: true
+            - name: config-volume
+              mountPath: /fluentd/etc
+        # Application
         - name: cjtim-backend-go
+          # TAG will be replace during Gitlab CI pipeline
           image: registry.cloud.okteto.net/cjtim/cjtim-backend-go:TAG
           envFrom:
             - configMapRef:
                 name: cjtim-backend-go-configmap
           resources:
             limits:
-              cpu: 500m
+              cpu: 400m
               memory: 256Mi
           ports:
             - containerPort: 8080
+          livenessProbe:
+            initialDelaySeconds: 10
+            httpGet:
+              path: /health
+              port: 8080
           volumeMounts:
             - name: varlog
               mountPath: /var/log
+
       volumes:
+        - name: config-volume
+          configMap:
+            name: cjtim-backend-go-configmap
         - name: varlog
-          persistentVolumeClaim:
-            claimName: fluentd-pvc
+          emptyDir: {}
