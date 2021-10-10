@@ -6,7 +6,7 @@ spec:
   selector:
     matchLabels:
       app: cjtim-backend-go
-  replicas: 1
+  replicas: 2
   template:
     metadata:
       labels:
@@ -20,7 +20,14 @@ spec:
                 name: cjtim-backend-go-configmap
           resources:
             limits:
-              cpu: 800m
+              cpu: 500m
               memory: 256Mi
           ports:
             - containerPort: 8080
+          volumeMounts:
+            - name: varlog
+              mountPath: /var/log
+      volumes:
+        - name: varlog
+          persistentVolumeClaim:
+            claimName: fluentd-pvc
