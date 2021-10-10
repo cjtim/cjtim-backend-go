@@ -28,7 +28,7 @@ spec:
           resources:
             limits:
               cpu: 100m
-              memory: 500Mi
+              memory: 50Mi
           volumeMounts:
             - name: varlog
               mountPath: /var/log
@@ -50,6 +50,7 @@ spec:
             - containerPort: 8080
           livenessProbe:
             initialDelaySeconds: 10
+            periodSeconds: 30
             httpGet:
               path: /health
               port: 8080
