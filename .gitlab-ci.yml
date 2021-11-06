@@ -35,15 +35,21 @@ services:
   before_script:
     - mkdir -p .cache
     - go mod download
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
 
 compile:
   stage: compile
   extends: .go
+  variables:
+    OUTPUT_FILE: main
   script:
-    - go build -o ./main
+    - go build -o $OUTPUT_FILE
   artifacts:
     paths:
-      - main
+      - $OUTPUT_FILE
   rules: &ci_rule
     - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
     - if: "$CI_COMMIT_BRANCH =~ /^(test)+/"
@@ -61,7 +67,8 @@ test:
   extends: .go
   script:
     - apk add --no-cache gcc musl-dev
-    - ./tools/test-coverage.sh
+    - go get gotest.tools/gotestsum
+    - gotestsum --junitfile report.xml --format testname
   variables:
     COMPOSE_FILE: "tools/docker-compose.yml"
     MONGO_URI: "mongodb://mongodb:mongodb@mongodb"
