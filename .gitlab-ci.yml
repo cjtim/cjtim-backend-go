@@ -26,15 +26,18 @@ services:
     - mkdir -p $GOPATH/src/$(dirname $REPO_NAME)
     - ln -svf $CI_PROJECT_DIR $GOPATH/src/$REPO_NAME
     - cd $GOPATH/src/$REPO_NAME
+    - go mod download
   variables:
     GOOS: linux
     GOARCH: amd64
     CGO_ENABLED: 0
+    GOPATH: /go
   cache:
     key: $CI_JOB_NAME
     when: always
     paths:
       - $GOPATH/pkg/mod
+      - $CI_PROJECT_DIR/vendor
 
 compile:
   stage: compile
