@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -18,9 +19,8 @@ func main() {
 	logger := middlewares.InitZap()
 	defer logger.Sync()
 	zap.ReplaceGlobals(logger)
-	
-	setupCloseHandler()
 
+	setupCloseHandler()
 
 	client, err := repository.MongoClient()
 	if err != nil {
@@ -28,13 +28,15 @@ func main() {
 	}
 	repository.Client = client
 	repository.DB = client.Database(os.Getenv("MONGO_DB"))
-	
+
 	app := startServer()
-	if err := app.Listen(":8080"); err != nil {
+	listen := fmt.Sprintf(":%s", os.Getenv("PORT"))
+	if err := app.Listen(listen); err != nil {
 		repository.DB.Client().Disconnect(context.TODO())
 		zap.L().Info("MongoDB disconected!")
 		zap.L().Fatal("fiber start error", zap.Error(err))
 	}
+	os.Exit(0)
 }
 
 func startServer() *fiber.App {
@@ -43,7 +45,7 @@ func startServer() *fiber.App {
 		BodyLimit:    100 * 1024 * 1024, // Limit file size to 100MB
 	})
 	app.Use(middlewares.Cors())
-	app.Use(middlewares.RequestLog()) 
+	app.Use(middlewares.RequestLog())
 	api.Route(app) // setup router path
 	return app
 }

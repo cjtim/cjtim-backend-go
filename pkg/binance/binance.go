@@ -7,9 +7,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
+	"github.com/cjtim/cjtim-backend-go/pkg/utils"
 	"github.com/go-resty/resty/v2"
+	"go.uber.org/zap"
 )
 
 var restyClient = resty.New()
@@ -26,16 +29,20 @@ func GetBinanceAccount(apiKey string, secretKey string) (map[string]interface{},
 	signature := ComputeHmac256("timestamp="+fmt.Sprint(timeNow), secretKey)
 	url := "https://api.binance.com/api/v3/account?timestamp=" + fmt.Sprint(timeNow)
 	url += "&signature=" + signature
-	resp, err := restyClient.R().SetHeader("X-MBX-APIKEY", apiKey).Get(url)
+	resp, respBody, err := utils.HttpGET(url, nil, map[string]string{"X-MBX-APIKEY": apiKey})
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode() != 200 {
-		return nil, errors.New(string(resp.Body()))
+	if resp.StatusCode != http.StatusOK {
+		err := errors.New(string(respBody))
+		zap.L().Info("GetBinanceAccount", zap.Error(err))
+		return nil, err
 	}
+
 	binanceAccount := map[string]interface{}{}
-	err = json.Unmarshal(resp.Body(), &binanceAccount)
+	err = json.Unmarshal(respBody, &binanceAccount)
 	if err != nil {
+		zap.L().Info("GetBinanceAccount", zap.Error(err))
 		return nil, err
 	}
 	return binanceAccount, nil

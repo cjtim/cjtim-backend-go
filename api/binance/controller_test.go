@@ -3,6 +3,7 @@ package binance_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -19,10 +20,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-
 func init() {
 	client, err := repository.MongoClient()
 	if err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
 	repository.DB = client.Database("production")
@@ -33,9 +34,9 @@ func initialBinanceMock() *fiber.App {
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", &linebot.UserProfileResponse{
-			UserID: "aaaaaaaaaabbbbbbbbb",
+			UserID:      "aaaaaaaaaabbbbbbbbb",
 			DisplayName: "Unit Test",
-			PictureURL: "",
+			PictureURL:  "",
 		})
 		return c.Next()
 	})
@@ -46,7 +47,6 @@ func initialBinanceMock() *fiber.App {
 	return app
 }
 
-
 func Test_Get_NoUser(t *testing.T) {
 	app := initialBinanceMock()
 
@@ -55,16 +55,16 @@ func Test_Get_NoUser(t *testing.T) {
 	resp, err := app.Test(req)
 	assert.Nil(t, err)
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
-    if err != nil {
-        t.Fatal("cannot parse body")
-    }
+	if err != nil {
+		t.Fatal("cannot parse body")
+	}
 	actual := repository.BinanceScheama{}
-    err = json.Unmarshal(bodyBytes, &actual)
+	err = json.Unmarshal(bodyBytes, &actual)
 	if err != nil {
 		t.Fatal(err)
 	}
 	expect := repository.BinanceScheama{
-		LineUID:         "aaaaaaaaaabbbbbbbbb",
+		LineUID:          "aaaaaaaaaabbbbbbbbb",
 		LineNotifyToken:  "",
 		BinanceApiKey:    "",
 		BinanceSecretKey: "",
@@ -113,12 +113,17 @@ func Test_UpdatePrice_Fail(t *testing.T) {
 }
 
 func Test_Cron(t *testing.T) {
+	needNotify := false
 	user := repository.BinanceScheama{
 		LineNotifyTime: int64(time.Now().Minute()),
 	}
 	userTime := (user.LineNotifyTime) % 60
 	currentMinute := time.Now().Minute()
-	needNotify := (currentMinute % int(userTime)) == 0
+	if userTime > 0 {
+		needNotify = (currentMinute % int(userTime)) == 0
+	} else {
+		needNotify = userTime == int64(currentMinute)
+	}
 	t.Log(currentMinute)
 	if needNotify {
 		t.Log(currentMinute)

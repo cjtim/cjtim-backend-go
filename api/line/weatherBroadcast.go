@@ -8,6 +8,7 @@ import (
 	"github.com/cjtim/cjtim-backend-go/pkg/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
+	"go.uber.org/zap"
 )
 
 var _ = godotenv.Load()
@@ -27,5 +28,7 @@ func WeatherBroadcast(c *fiber.Ctx) error {
 	if err != nil {
 		return nil
 	}
+
+	zap.L().Info("WeatherBroadcast")
 	return c.SendStatus(fiber.StatusOK)
 }
