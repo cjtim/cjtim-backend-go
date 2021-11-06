@@ -1,6 +1,5 @@
 stages:
   - compile
-  - setup-test
   - test
   - build-container
   - deploy
@@ -8,7 +7,7 @@ stages:
 variables:
   MONGO_INITDB_ROOT_USERNAME: mongodb
   MONGO_INITDB_ROOT_PASSWORD: mongodb
-  
+
   REPO_NAME: gitlab.com/$CI_PROJECT_PATH
   DOCKER_IMAGE_TAG: $CI_REGISTRY/$CI_PROJECT_PATH
   OKTETO_REGISTRY: registry.cloud.okteto.net
@@ -52,7 +51,7 @@ compile:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 setup-test:
-  stage: setup-test
+  stage: compile
   image: mongo:4.4.6
   script:
     - mongo --nodb ./tools/initdb.js
@@ -68,6 +67,8 @@ test:
     COMPOSE_FILE: "tools/docker-compose.yml"
     MONGO_URI: "mongodb://mongodb:mongodb@mongodb"
   rules: *ci_rule
+  needs:
+    - setup-test
 
 # build-container:
 #   stage: build-container
