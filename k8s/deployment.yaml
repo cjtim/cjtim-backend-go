@@ -6,7 +6,7 @@ spec:
   selector:
     matchLabels:
       app: cjtim-backend-go
-  replicas: 2
+  replicas: 1
   template:
     metadata:
       labels:

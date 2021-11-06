@@ -3,6 +3,7 @@ package binance_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -22,6 +23,7 @@ import (
 func init() {
 	client, err := repository.MongoClient()
 	if err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
 	repository.DB = client.Database("production")

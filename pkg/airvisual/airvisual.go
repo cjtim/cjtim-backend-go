@@ -4,25 +4,26 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 
-	"github.com/go-resty/resty/v2"
+	"github.com/cjtim/cjtim-backend-go/pkg/utils"
 	"github.com/joho/godotenv"
 )
 
 var _ = godotenv.Load()
-var restyClient = resty.New()
 
 func get(queryParams map[string]string, targetAPI string) (*AirVisualResponse, error) {
-	resp, err := restyClient.R().SetQueryParams(queryParams).Get(targetAPI)
-	body := &AirVisualResponse{}
+	resp, respBody, err := utils.HttpGET(targetAPI, queryParams, nil)
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode() != 200 {
-		return nil, errors.New(string(resp.Body()))
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(string(respBody))
 	}
-	err = json.Unmarshal(resp.Body(), body)
+
+	body := &AirVisualResponse{}
+	err = json.Unmarshal(respBody, body)
 	if err != nil {
 		return nil, err
 	}

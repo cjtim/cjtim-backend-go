@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -29,7 +30,8 @@ func main() {
 	repository.DB = client.Database(os.Getenv("MONGO_DB"))
 
 	app := startServer()
-	if err := app.Listen(":8080"); err != nil {
+	listen := fmt.Sprintf(":%s", os.Getenv("PORT"))
+	if err := app.Listen(listen); err != nil {
 		repository.DB.Client().Disconnect(context.TODO())
 		zap.L().Info("MongoDB disconected!")
 		zap.L().Fatal("fiber start error", zap.Error(err))
