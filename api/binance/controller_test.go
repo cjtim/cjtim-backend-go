@@ -113,12 +113,17 @@ func Test_UpdatePrice_Fail(t *testing.T) {
 }
 
 func Test_Cron(t *testing.T) {
+	needNotify := false
 	user := repository.BinanceScheama{
 		LineNotifyTime: int64(time.Now().Minute()),
 	}
 	userTime := (user.LineNotifyTime) % 60
 	currentMinute := time.Now().Minute()
-	needNotify := (currentMinute % int(userTime)) == 0
+	if userTime > 0 {
+		needNotify = (currentMinute % int(userTime)) == 0
+	} else {
+		needNotify = userTime == int64(currentMinute)
+	}
 	t.Log(currentMinute)
 	if needNotify {
 		t.Log(currentMinute)
