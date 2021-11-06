@@ -35,10 +35,6 @@ services:
   before_script:
     - mkdir -p .cache
     - go mod download
-  artifacts:
-    when: always
-    reports:
-      junit: report.xml
 
 compile:
   stage: compile
@@ -64,17 +60,20 @@ setup-test:
 
 test:
   stage: test
-  extends: .go
+  image: golang:1.16-alpine3.14
   script:
     - apk add --no-cache gcc musl-dev
     - go get gotest.tools/gotestsum
     - gotestsum --junitfile report.xml --format testname
   variables:
-    COMPOSE_FILE: "tools/docker-compose.yml"
     MONGO_URI: "mongodb://mongodb:mongodb@mongodb"
   rules: *ci_rule
   needs:
     - setup-test
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
 
 # build-container:
 #   stage: build-container
