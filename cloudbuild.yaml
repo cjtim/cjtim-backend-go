@@ -1,20 +1,9 @@
 steps:
-  - name: gcr.io/cloud-builders/gcloud
-    entrypoint: "bash"
-    args:
-      - "-c"
-      - |
-        gcloud secrets versions access latest --secret=cjtim-backend-go_serviceAcc --format='get(payload.data)' | tr '_-' '/+' | base64 -d > serviceAcc.json && \
-        gcloud secrets versions access latest --secret=cjtim-backend-go_env --format='get(payload.data)' | tr '_-' '/+' | base64 -d > .env
   # Test
   - name: "golang"
     args: ["go", "get", "-d", "-v"]
-  - name: "golang"
-    args: ["go", "get", "github.com/joho/godotenv/cmd/godotenv"]
-  - name: "golang"
-    args: ["godotenv", "go", "test", "-v", "./..."]
-  - name: "golang"
-    args: ["rm", "-rf", ".env"]
+  # - name: "golang"
+  #   args: ["go", "test", "-v", "./..."]
   # Build
   - name: "golang"
     args: ["go", "build", "-o", "./main"]

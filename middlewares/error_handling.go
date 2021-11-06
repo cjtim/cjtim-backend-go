@@ -1,13 +1,12 @@
 package middlewares
 
 import (
-	"log"
-
 	"github.com/gofiber/fiber/v2"
+	"go.uber.org/zap"
 )
 
 func ErrorHandling(c *fiber.Ctx, err error) error {
-	log.Println(string(c.IP()), err)
+	zap.L().Error("Request errors", zap.String("ip", c.IP()), zap.Error(err))
 	// Default 500 statuscode
 	code := fiber.StatusInternalServerError
 

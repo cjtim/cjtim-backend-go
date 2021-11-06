@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,20 +11,28 @@ import (
 	"github.com/cjtim/cjtim-backend-go/repository"
 	"github.com/gofiber/fiber/v2"
 	_ "github.com/joho/godotenv/autoload"
+	"go.uber.org/zap"
 )
 
 func main() {
+	logger := middlewares.InitZap()
+	defer logger.Sync()
+	zap.ReplaceGlobals(logger)
+
+	setupCloseHandler()
+
 	client, err := repository.MongoClient()
 	if err != nil {
-		log.Panic(err)
-		os.Exit(1)
+		zap.L().Fatal("Database start error", zap.Error(err))
 	}
 	repository.Client = client
 	repository.DB = client.Database(os.Getenv("MONGO_DB"))
+
 	app := startServer()
 	if err := app.Listen(":8080"); err != nil {
-		log.Panicln(err)
-		os.Exit(1)
+		repository.DB.Client().Disconnect(context.TODO())
+		zap.L().Info("MongoDB disconected!")
+		zap.L().Fatal("fiber start error", zap.Error(err))
 	}
 	os.Exit(0)
 }
@@ -34,15 +40,11 @@ func main() {
 func startServer() *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: middlewares.ErrorHandling,
-		BodyLimit:    100 * 1024 * 1024, // Limit file size to 4MB
-	})
-	app.Use(func(c *fiber.Ctx) error {
-		// 
-		return c.Next()
+		BodyLimit:    100 * 1024 * 1024, // Limit file size to 100MB
 	})
 	app.Use(middlewares.Cors())
+	app.Use(middlewares.RequestLog())
 	api.Route(app) // setup router path
-	setupCloseHandler()
 	return app
 }
 
@@ -52,9 +54,9 @@ func setupCloseHandler() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		fmt.Println("\r- Got SIGTERM, terminating program...")
+		zap.L().Info("Got SIGTERM, terminating program...")
 		repository.Client.Disconnect(context.TODO())
-		fmt.Println("\r- MongoDB disconected!")
+		zap.L().Info("MongoDB disconected!")
 		os.Exit(0)
 	}()
 }

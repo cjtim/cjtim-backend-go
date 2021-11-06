@@ -12,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/line/line-bot-sdk-go/linebot"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.uber.org/zap"
 )
 
 var restyClient = resty.New()
@@ -28,7 +29,9 @@ func Get(c *fiber.Ctx) error {
 			LineNotifyToken:  "",
 			BinanceApiKey:    "",
 			BinanceSecretKey: "",
-			Prices:           map[string]interface{}{},
+			Prices:           map[string]interface{}{
+				"BNB": 1,
+			},
 			LineNotifyTime:   5,
 		}
 		collection.InsertOne(context.TODO(), data)
@@ -101,6 +104,7 @@ func Cronjob(c *fiber.Ctx) error {
 			needNotify = (currentMinute % int(userTime)) == 0
 		}
 		if needNotify {
+			zap.L().Info("Trigger binance line notify", zap.String("lineuid", user.LineUID))
 			restyClient.R().SetHeader("Authorization", os.Getenv("SECRET_PASSPHRASE")).SetBody(user).Post(
 				os.Getenv("MICROSERVICE_BINANCE_LINE_NOTIFY_URL"),
 			)
