@@ -52,7 +52,8 @@ setup-test:
   stage: setup-test
   image: mongo:4.4.6
   script:
-    - mongo --nodb /initdb.js
+    - mongo --nodb /tools/initdb.js
+  rules: *ci_rule
 
 test:
   stage: test
