@@ -3,10 +3,11 @@ package rebrandly
 import (
 	"encoding/json"
 	"errors"
+	"net/http"
 	"os"
 
+	"github.com/cjtim/cjtim-backend-go/pkg/utils"
 	"github.com/cjtim/cjtim-backend-go/repository"
-	"github.com/go-resty/resty/v2"
 	"github.com/joho/godotenv"
 )
 
@@ -19,7 +20,6 @@ type RebrandlyDomainReq struct {
 }
 
 var _ = godotenv.Load()
-var restyClient = resty.New()
 
 // Add -
 func Add(originalURL string) (*repository.URLScheama, error) {
@@ -37,28 +37,39 @@ func Add(originalURL string) (*repository.URLScheama, error) {
 		"apikey":       os.Getenv("REBRANDLY_API"),
 		"workspace":    os.Getenv("REBRANDLY_WORDSPACE"),
 	}
-	resp, err := restyClient.R().SetHeaders(headers).SetBody(body).Post("https://api.rebrandly.com/v1/links")
+	resp, respBody, err := utils.Http(&utils.HttpReq{
+		Method:  http.MethodPost,
+		URL:     "https://api.rebrandly.com/v1/links",
+		Headers: headers,
+		Body:    body,
+	})
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode() != 200 {
-		return nil, errors.New(string(resp.Body()))
+	if resp.StatusCode != 200 {
+		return nil, errors.New(string(respBody))
 	}
 	data := &repository.URLScheama{}
-	if err := json.Unmarshal(resp.Body(), data); err != nil {
+	if err := json.Unmarshal(respBody, data); err != nil {
 		return nil, err
 	}
 	return data, nil
 }
 
 func Delete(id string) error {
-	resp, err := restyClient.R().SetHeader("apikey",
-		os.Getenv("REBRANDLY_API")).Delete("https://api.rebrandly.com/v1/links/" + id)
+	headers := map[string]string{
+		"apikey": os.Getenv("REBRANDLY_API"),
+	}
+	resp, body, err := utils.Http(&utils.HttpReq{
+		Method:  http.MethodDelete,
+		URL:     "https://api.rebrandly.com/v1/links/" + id,
+		Headers: headers,
+	})
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode() != 200 {
-		return errors.New(string(resp.Body()))
+	if resp.StatusCode != 200 {
+		return errors.New(string(body))
 	}
 	return nil
 }

@@ -14,7 +14,11 @@ import (
 var _ = godotenv.Load()
 
 func get(queryParams map[string]string, targetAPI string) (*AirVisualResponse, error) {
-	resp, respBody, err := utils.HttpGET(targetAPI, queryParams, nil)
+	resp, respBody, err := utils.Http(&utils.HttpReq{
+		Method: http.MethodGet,
+		URL:    targetAPI,
+		Querys: queryParams,
+	})
 	if err != nil {
 		return nil, err
 	}
