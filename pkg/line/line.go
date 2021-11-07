@@ -4,46 +4,59 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"net/http"
 	"os"
 
-	"github.com/go-resty/resty/v2"
+	"github.com/cjtim/cjtim-backend-go/pkg/utils"
 	"github.com/joho/godotenv"
 	"github.com/line/line-bot-sdk-go/linebot"
 )
 
 var _ = godotenv.Load()
-var restyClient = resty.New()
-var LineBot, err = linebot.New(os.Getenv("LINE_CHANNEL_SECRET"), os.Getenv("LINE_CHANNEL_ACCESS_TOKEN"))
+var LineBot, _ = linebot.New(os.Getenv("LINE_CHANNEL_SECRET"), os.Getenv("LINE_CHANNEL_ACCESS_TOKEN"))
 
 func LineIsTokenValid(accToken string) error {
-	resp, err := restyClient.R().SetQueryParam("access_token", accToken).Get("https://api.line.me/oauth2/v2.1/verify")
+
+	resp, body, err := utils.Http(&utils.HttpReq{
+		Method: http.MethodGet,
+		URL:    "https://api.line.me/oauth2/v2.1/verify",
+		Querys: map[string]string{
+			"access_token": accToken,
+		},
+	})
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode() != 200 {
-		return errors.New(string(resp.Body()))
+	if resp.StatusCode != 200 {
+		return errors.New(string(body))
 	}
 	return nil
 }
 
 func LineGetProfile(accToken string) (*linebot.UserProfileResponse, error) {
-	resp, err := restyClient.R().SetHeader("Authorization", "Bearer "+accToken).Get("https://api.line.me/v2/profile")
+	resp, body, err := utils.Http(&utils.HttpReq{
+		Method: http.MethodGet,
+		URL:    "https://api.line.me/v2/profile",
+		Headers: map[string]string{
+			"Authorization": "Bearer " + accToken,
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode() != 200 {
-		return nil, errors.New(string(resp.Body()))
+	if resp.StatusCode != 200 {
+		return nil, errors.New(string(body))
 	}
 	profile := &linebot.UserProfileResponse{}
-	if resp.StatusCode() == 200 {
-		body := resp.Body()
+	if resp.StatusCode == 200 {
+		body := body
 		err := json.Unmarshal(body, &profile)
 		if err != nil {
 			return nil, err
 		}
 		return profile, nil
 	}
-	return nil, errors.New(string(resp.Body()))
+	return nil, errors.New(string(body))
 }
 
 func GetContent(messageID string) ([]byte, string, error) {
@@ -63,16 +76,20 @@ func Reply(replayToken string, msgs []interface{}) error {
 		"Content-Type":  "application/json",
 		"Authorization": "Bearer " + os.Getenv("LINE_CHANNEL_ACCESS_TOKEN"),
 	}
-	instance := restyClient.R().SetHeaders(headers).SetBody(map[string]interface{}{
-		"replyToken": replayToken,
-		"messages":   msgs,
+	resp, body, err := utils.Http(&utils.HttpReq{
+		Method:  http.MethodPost,
+		URL:     "https://api.line.me/v2/bot/message/reply",
+		Headers: headers,
+		Body: map[string]interface{}{
+			"replyToken": replayToken,
+			"messages":   msgs,
+		},
 	})
-	resp, err := instance.Post("https://api.line.me/v2/bot/message/reply")
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode() != 200 {
-		return errors.New(string(resp.Body()))
+	if resp.StatusCode != 200 {
+		return errors.New(string(body))
 	}
 	return nil
 }
@@ -82,15 +99,19 @@ func Broadcast(msgs []interface{}) error {
 		"Content-Type":  "application/json",
 		"Authorization": "Bearer " + os.Getenv("LINE_CHANNEL_ACCESS_TOKEN"),
 	}
-	instance := restyClient.R().SetHeaders(headers).SetBody(map[string]interface{}{
-		"messages": msgs,
+	resp, body, err := utils.Http(&utils.HttpReq{
+		Method:  http.MethodPost,
+		URL:     "https://api.line.me/v2/bot/message/broadcast",
+		Headers: headers,
+		Body: map[string]interface{}{
+			"messages": msgs,
+		},
 	})
-	resp, err := instance.Post("https://api.line.me/v2/bot/message/broadcast")
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode() != 200 {
-		return errors.New(string(resp.Body()))
+	if resp.StatusCode != 200 {
+		return errors.New(string(body))
 	}
 	return nil
 }

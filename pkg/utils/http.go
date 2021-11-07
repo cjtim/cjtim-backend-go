@@ -1,38 +1,23 @@
 package utils
 
 import (
+	"bytes"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"time"
-
-	"go.uber.org/zap"
 )
 
-func HttpGET(url string, querys, headers map[string]string) (resp *http.Response, body []byte, err error) {
-	if querys == nil {
-		querys = map[string]string{}
-	}
-	if headers == nil {
-		headers = map[string]string{}
-	}
+type HttpReq struct {
+	Method    string
+	URL       string
+	Querys    map[string]string
+	Headers   map[string]string
+	Body      interface{}
+	BodyBytes []byte
+}
 
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return &http.Response{}, nil, err
-	}
-
-	// appending querys
-	q := req.URL.Query()
-	for query, value := range querys {
-		q.Add(query, value)
-	}
-	req.URL.RawQuery = q.Encode()
-
-	// appending headers
-	for header, value := range headers {
-		req.Header.Add(header, value)
-	}
-
+func doRequest(req *http.Request) (resp *http.Response, body []byte, err error) {
 	client := &http.Client{Timeout: 15 * time.Second}
 	resp, err = client.Do(req)
 	if err != nil {
@@ -42,8 +27,45 @@ func HttpGET(url string, querys, headers map[string]string) (resp *http.Response
 
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
-		zap.L().Error("HttpGET", zap.Error(err))
+		return &http.Response{}, nil, err
+	}
+	return resp, body, nil
+}
+
+func Http(httpReq *HttpReq) (*http.Response, []byte, error) {
+	if httpReq.Querys == nil {
+		httpReq.Querys = map[string]string{}
+	}
+	if httpReq.Headers == nil {
+		httpReq.Headers = map[string]string{}
+	}
+	if httpReq.Body != nil {
+		bBody, err := json.Marshal(httpReq.Body)
+		httpReq.BodyBytes = bBody
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
-	return &http.Response{}, body, nil
+	req, err := http.NewRequest(
+		httpReq.Method,
+		httpReq.URL,
+		bytes.NewBuffer(httpReq.BodyBytes),
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// appending querys
+	q := req.URL.Query()
+	for query, value := range httpReq.Querys {
+		q.Add(query, value)
+	}
+	req.URL.RawQuery = q.Encode()
+
+	// appending headers
+	for header, value := range httpReq.Headers {
+		req.Header.Add(header, value)
+	}
+	return doRequest(req)
 }

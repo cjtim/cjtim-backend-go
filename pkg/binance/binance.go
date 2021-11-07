@@ -11,11 +11,8 @@ import (
 	"time"
 
 	"github.com/cjtim/cjtim-backend-go/pkg/utils"
-	"github.com/go-resty/resty/v2"
 	"go.uber.org/zap"
 )
-
-var restyClient = resty.New()
 
 func ComputeHmac256(message string, secret string) string {
 	key := []byte(secret)
@@ -29,7 +26,11 @@ func GetBinanceAccount(apiKey string, secretKey string) (map[string]interface{},
 	signature := ComputeHmac256("timestamp="+fmt.Sprint(timeNow), secretKey)
 	url := "https://api.binance.com/api/v3/account?timestamp=" + fmt.Sprint(timeNow)
 	url += "&signature=" + signature
-	resp, respBody, err := utils.HttpGET(url, nil, map[string]string{"X-MBX-APIKEY": apiKey})
+	resp, respBody, err := utils.Http(&utils.HttpReq{
+		Method:  http.MethodGet,
+		URL:     url,
+		Headers: map[string]string{"X-MBX-APIKEY": apiKey},
+	})
 	if err != nil {
 		return nil, err
 	}
