@@ -13,6 +13,8 @@ variables:
   DOCKER_DRIVER: overlay2
 
   REPO_NAME: gitlab.com/$CI_PROJECT_PATH
+  DOCKER_IMAGE_TAG: $CI_REGISTRY/$CI_PROJECT_PATH
+
   OKTETO_REGISTRY: registry.cloud.okteto.net
   OKTETO_PREVIEW_NS: review-$CI_PROJECT_ROOT_NAMESPACE
   TAG: $CI_COMMIT_SHORT_SHA
@@ -84,21 +86,16 @@ build-container-okteto:
   services:
     - docker:19-dind
   script:
-    - docker login -u $CI_PROJECT_ROOT_NAMESPACE -p $(echo $OKTETO_TOKEN | base64 -d) $OKTETO_REGISTRY
-    - docker build -t $OKTETO_REGISTRY/$NAMESPACE/$CI_PROJECT_NAME:$TAG -f ci.Dockerfile .
-    - docker push $OKTETO_REGISTRY/$NAMESPACE/$CI_PROJECT_NAME:$TAG
-    - docker logout $OKTETO_REGISTRY
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $DOCKER_IMAGE_TAG:$TAG -f ci.Dockerfile .
+    - docker push $DOCKER_IMAGE_TAG:$TAG
+    - docker logout $CI_REGISTRY
   dependencies:
     - compile
   rules:
     - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
-      variables:
-        NAMESPACE: $CI_PROJECT_ROOT_NAMESPACE
     - if: "$CI_COMMIT_BRANCH =~ /^(test)+/"
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      variables:
-        NAMESPACE: $CI_PROJECT_ROOT_NAMESPACE
-        # NAMESPACE: ${OKTETO_PREVIEW_NS}
 
 review:
   stage: review
