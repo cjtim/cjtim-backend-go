@@ -15,8 +15,8 @@ variables:
   REPO_NAME: gitlab.com/$CI_PROJECT_PATH
   DOCKER_IMAGE_TAG: $CI_REGISTRY/$CI_PROJECT_PATH
 
-  OKTETO_REGISTRY: registry.cloud.okteto.net
-  OKTETO_PREVIEW_NS: review-$CI_PROJECT_ROOT_NAMESPACE
+  MR_ID: $CI_MERGE_REQUEST_IID
+  OKTETO_PREVIEW_NS: mr-$MR_ID
   TAG: $CI_COMMIT_SHORT_SHA
 
 services:
@@ -51,7 +51,6 @@ compile:
       - $OUTPUT_FILE
   rules: &ci_rule
     - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
-    - if: "$CI_COMMIT_BRANCH =~ /^(test)+/"
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 setup-test:
@@ -59,7 +58,8 @@ setup-test:
   image: mongo:4.4.6
   script:
     - mongo --nodb ./tools/initdb.js
-  rules: *ci_rule
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 test:
   stage: test
@@ -70,8 +70,7 @@ test:
     - gotestsum --junitfile report.xml --format testname
   variables:
     MONGO_URI: "mongodb://mongodb:mongodb@mongodb"
-  rules: &mr-rule
-    - if: "$CI_COMMIT_BRANCH =~ /^(test)+/"
+  rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
   needs:
     - setup-test
@@ -94,30 +93,35 @@ build-container-okteto:
     - compile
   rules:
     - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
-    - if: "$CI_COMMIT_BRANCH =~ /^(test)+/"
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 review:
   stage: review
   image: okteto/okteto:1.13.4
   variables:
-    APP: review-$CI_COMMIT_REF_SLUG
+    APP: $OKTETO_PREVIEW_NS
   script:
     - export OKTETO_TOKEN=$(echo $OKTETO_TOKEN | base64 -d)
     - okteto namespace
-    - okteto preview deploy ${OKTETO_PREVIEW_NS} --scope personal --branch $CI_COMMIT_REF_NAME --repository $CI_REPOSITORY_URL --wait --var TAG=$TAG
+    - |
+      okteto preview deploy $OKTETO_PREVIEW_NS \
+      --scope personal \
+      --branch $CI_COMMIT_REF_NAME \
+      --repository $CI_REPOSITORY_URL \
+      --wait --var TAG=$TAG
   environment:
-    name: review/$CI_COMMIT_REF_SLUG
-    url: https://${OKTETO_PREVIEW_NS}.cloud.okteto.net
+    name: $OKTETO_PREVIEW_NS
+    url: https://$OKTETO_PREVIEW_NS.cloud.okteto.net
     on_stop: stop-review
-  rules: *mr-rule
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 stop-review:
   stage: review
   image: okteto/okteto:1.13.4
   when: manual
   environment:
-    name: review/$CI_COMMIT_REF_SLUG
+    name: $OKTETO_PREVIEW_NS
     action: stop
   script:
     - export OKTETO_TOKEN=$(echo $OKTETO_TOKEN | base64 -d)
@@ -136,40 +140,7 @@ okteto:
   script:
     - export OKTETO_TOKEN=$(echo $OKTETO_TOKEN | base64 -d)
     - okteto namespace
-    - sed -e "s/TAG/$TAG/" k8s/deployment.yaml | sed -e "s/NS/$NS/" | kubectl apply -f -
+    - sed -e "s/TAG/$TAG/" k8s/deployment.yaml | kubectl apply -f -
     - kubectl apply -f k8s/service.yaml
   rules:
     - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
-    - if: "$CI_COMMIT_BRANCH =~ /^(test)+/"
-# build-container:
-#   stage: build-container
-#   image: docker:19
-#   services:
-#     - docker:19-dind
-#   script:
-#     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-#     - docker login -u cjtim -p $(echo $OKTETO_TOKEN | base64 -d) $OKTETO_REGISTRY
-#     - docker build -t $DOCKER_IMAGE_TAG:$TAG -f ci.Dockerfile .
-#     - docker tag $DOCKER_IMAGE_TAG:$TAG $DOCKER_IMAGE_TAG:latest
-#     - docker tag $DOCKER_IMAGE_TAG:$TAG $OKTETO_IMAGE_TAG:$TAG
-#     - docker push $DOCKER_IMAGE_TAG
-#     - docker push $DOCKER_IMAGE_TAG:latest
-#     - docker push $OKTETO_IMAGE_TAG:$TAG
-#     - docker logout $CI_REGISTRY
-#     - docker logout $OKTETO_REGISTRY
-#   dependencies:
-#     - compile
-#   rules:
-#     - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
-#     - if: "$CI_COMMIT_BRANCH =~ /^(test)+/"
-
-# deploy:
-#   stage: deploy
-#   needs:
-#     - build-container
-#   trigger:
-#     project: cjtim/my-server
-#     strategy: depend
-#   rules:
-#     - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
-#     - if: "$CI_COMMIT_BRANCH =~ /^(test)+/"
