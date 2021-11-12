@@ -16,8 +16,7 @@ variables:
   DOCKER_IMAGE_TAG: $CI_REGISTRY/$CI_PROJECT_PATH
 
   MR_ID: $CI_MERGE_REQUEST_IID
-  OKTETO_PREVIEW_NS: "mr-${MR_ID}-${CI_PROJECT_ROOT_NAMESPACE}"
-  OKTETO_PREVIEW_URL: "https://${OKTETO_PREVIEW_NS}.cloud.okteto.net"
+  OKTETO_PREVIEW_NS: "mr-${CI_MERGE_REQUEST_IID}-${CI_PROJECT_ROOT_NAMESPACE}"
   TAG: $CI_COMMIT_SHORT_SHA
 
 services:
@@ -114,14 +113,14 @@ review:
     - |
       kubectl get secret loki --namespace=$CI_PROJECT_ROOT_NAMESPACE -o yaml \
       | sed "s/namespace: $CI_PROJECT_ROOT_NAMESPACE/namespace: $OKTETO_PREVIEW_NS/" \
-      | kubectl create --namespace=$OKTETO_PREVIEW_NS -f -
+      | kubectl create --namespace=$OKTETO_PREVIEW_NS -f - || true
     - |
       kubectl get configmap cjtim-backend-go-configmap --namespace=$CI_PROJECT_ROOT_NAMESPACE -o yaml \
       | sed "s/namespace: $CI_PROJECT_ROOT_NAMESPACE/namespace: $OKTETO_PREVIEW_NS/" \
-      | kubectl create --namespace=$OKTETO_PREVIEW_NS -f -
+      | kubectl create --namespace=$OKTETO_PREVIEW_NS -f - || true
   environment:
     name: $OKTETO_PREVIEW_NS
-    url: $OKTETO_PREVIEW_URL
+    url: "https://mr-$CI_MERGE_REQUEST_IID-$CI_PROJECT_ROOT_NAMESPACE.cloud.okteto.net"
     on_stop: stop-review
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
