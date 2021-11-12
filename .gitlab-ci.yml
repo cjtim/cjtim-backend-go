@@ -97,7 +97,8 @@ build-container-okteto:
     - if: "$CI_COMMIT_BRANCH =~ /^(test)+/"
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       variables:
-        NAMESPACE: ${OKTETO_PREVIEW_NS}
+        NAMESPACE: $CI_PROJECT_ROOT_NAMESPACE
+        # NAMESPACE: ${OKTETO_PREVIEW_NS}
 
 review:
   stage: review
