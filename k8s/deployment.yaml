@@ -12,13 +12,82 @@ spec:
       labels:
         app: cjtim-backend-go
     spec:
+      initContainers:
+        - name: init-config
+          image: busybox
+          args:
+            - /bin/sh
+            - -c
+            - |
+              cat <<EOF > /fluentd/etc/fluent.conf
+              <source>
+                @type tail
+                path /var/log/**/*.log
+                pos_file /tmp/log/fluentd-containers.log.pos
+                read_from_head false
+                tag "#{ENV['APP_NAME']}"
+                path_key file_path 
+                # add file location to "path" key
+                <parse>
+                  @type json
+                  json_parser json
+                  time_format %Y-%m-%dT%H:%M:%S.%NZ
+                </parse>
+              </source>
+
+              <filter **>
+                @type record_transformer
+                <record>
+                  pod "#{ENV['HOSTNAME']}"
+                  tag "#{ENV['APP_NAME']}"
+                </record>
+              </filter>
+
+              <filter **>
+                @type parser
+                <parse>
+                  @type json
+                  json_parser json
+                </parse>
+                replace_invalid_sequence true
+                emit_invalid_record_to_error false # send normal string if cannot parse json
+                remove_key_name_field true   # if able to parse json, remove "log"
+                key_name log                # parse "log" key
+                reserve_data true           # keep parent data
+              </filter>
+
+              <match **>
+                @type loki
+                url "https://logs-prod-us-central1.grafana.net"
+                username "#{ENV['username']}"
+                password "#{ENV['password']}"
+                extra_labels {"env":"okteto"}
+                flush_interval 10s
+                flush_at_shutdown true
+                buffer_chunk_limit 1m
+                <label>    
+                  tag
+                  pod
+                </label>
+              </match>
+              EOF
+          resources:
+            limits:
+              cpu: 100m
+              memory: 50Mi
+          volumeMounts:
+            - name: config-volume
+              mountPath: /fluentd/etc
       containers:
         # Logging agent
         - name: fluentd
           image: grafana/fluent-plugin-loki:master
+          envFrom:
+            - secretRef:
+                name: loki
           env:
-            - name: 'APP_NAME'
-              value: "cjtim-backend-go"
+            - name: "APP_NAME"
+              value: "bsc-portfolio"
           command:
             [
               "fluentd",
@@ -38,6 +107,7 @@ spec:
               readOnly: true
             - name: config-volume
               mountPath: /fluentd/etc
+              readOnly: true
         # Application
         - name: cjtim-backend-go
           # TAG will be replace during Gitlab CI pipeline
@@ -63,7 +133,6 @@ spec:
 
       volumes:
         - name: config-volume
-          configMap:
-            name: cjtim-backend-go-configmap
+          emptyDir: {}
         - name: varlog
           emptyDir: {}
