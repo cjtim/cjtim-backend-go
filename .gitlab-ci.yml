@@ -112,13 +112,13 @@ review:
       --var TAG=$TAG
     - sleep 10
     - |
-      kubectl get secret loki -o yaml \
+      kubectl get secret loki --namespace=$CI_PROJECT_ROOT_NAMESPACE -o yaml \
       | sed 's/namespace: $CI_PROJECT_ROOT_NAMESPACE/namespace: $OKTETO_PREVIEW_NS/' \
-      | kubectl create -n $OKTETO_PREVIEW_NS -f -
+      | kubectl create --namespace=$OKTETO_PREVIEW_NS -f -
     - |
-      kubectl get configmap cjtim-backend-go-configmap -o yaml \
+      kubectl get configmap cjtim-backend-go-configmap --namespace=$CI_PROJECT_ROOT_NAMESPACE -o yaml \
       | sed 's/namespace: $CI_PROJECT_ROOT_NAMESPACE/namespace: $OKTETO_PREVIEW_NS/' \
-      | kubectl create -n $OKTETO_PREVIEW_NS -f -
+      | kubectl create --namespace=$OKTETO_PREVIEW_NS -f -
   environment:
     name: $OKTETO_PREVIEW_NS
     url: $OKTETO_PREVIEW_URL
