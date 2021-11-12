@@ -9,14 +9,13 @@ variables:
   MONGO_INITDB_ROOT_USERNAME: mongodb
   MONGO_INITDB_ROOT_PASSWORD: mongodb
 
-  REPO_NAME: gitlab.com/$CI_PROJECT_PATH
-  DOCKER_IMAGE_TAG: $CI_REGISTRY/$CI_PROJECT_PATH
-  OKTETO_REGISTRY: registry.cloud.okteto.net
-  OKTETO_IMAGE_TAG: $OKTETO_REGISTRY/$CI_PROJECT_PATH
-  OKTETO_PREVIEW_NS: review-$CI_PROJECT_ROOT_NAMESPACE
-  TAG: $CI_COMMIT_SHORT_SHA
   DOCKER_HOST: tcp://docker:2375/
   DOCKER_DRIVER: overlay2
+
+  REPO_NAME: gitlab.com/$CI_PROJECT_PATH
+  OKTETO_REGISTRY: registry.cloud.okteto.net
+  OKTETO_PREVIEW_NS: review-$CI_PROJECT_ROOT_NAMESPACE
+  TAG: $CI_COMMIT_SHORT_SHA
 
 services:
   - name: mongo:4.4.6
@@ -98,7 +97,7 @@ build-container-okteto:
     - if: "$CI_COMMIT_BRANCH =~ /^(test)+/"
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       variables:
-          NAMESPACE: ${OKTETO_PREVIEW_NS}
+        NAMESPACE: ${OKTETO_PREVIEW_NS}
 
 review:
   stage: review
@@ -108,7 +107,7 @@ review:
   script:
     - export OKTETO_TOKEN=$(echo $OKTETO_TOKEN | base64 -d)
     - okteto namespace
-    - okteto preview deploy ${OKTETO_PREVIEW_NS} --scope personal --branch $CI_COMMIT_REF_NAME --repository $CI_REPOSITORY_URL --wait --var TAG=$TAG --var NS=$OKTETO_PREVIEW_NS
+    - okteto preview deploy ${OKTETO_PREVIEW_NS} --scope personal --branch $CI_COMMIT_REF_NAME --repository $CI_REPOSITORY_URL --wait
   environment:
     name: review/$CI_COMMIT_REF_SLUG
     url: https://${OKTETO_PREVIEW_NS}.cloud.okteto.net
@@ -144,7 +143,6 @@ okteto:
   rules:
     - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
     - if: "$CI_COMMIT_BRANCH =~ /^(test)+/"
-
 # build-container:
 #   stage: build-container
 #   image: docker:19
