@@ -1,3 +1,4 @@
 deploy:
+  - sed -e "s/TAG/$OKTETO_GIT_COMMIT/" k8s/deployment.yaml | sed -e "s/NS/$OKTETO_NAMESPACE/"
   - sed -e "s/TAG/$OKTETO_GIT_COMMIT/" k8s/deployment.yaml | sed -e "s/NS/$OKTETO_NAMESPACE/" | kubectl apply -f -
   - kubectl apply -f k8s
