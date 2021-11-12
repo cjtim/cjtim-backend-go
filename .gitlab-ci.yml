@@ -119,8 +119,8 @@ review:
       | sed "s/namespace: $CI_PROJECT_ROOT_NAMESPACE/namespace: $OKTETO_PREVIEW_NS/" \
       | kubectl create --namespace=$OKTETO_PREVIEW_NS -f - || true
   environment:
-    name: $OKTETO_PREVIEW_NS
-    url: "https://mr-$CI_MERGE_REQUEST_IID-$CI_PROJECT_ROOT_NAMESPACE.cloud.okteto.net"
+    name: "mr-${CI_MERGE_REQUEST_IID}-${CI_PROJECT_ROOT_NAMESPACE}"
+    url: "https://cjtim-backend-go-mr-$CI_MERGE_REQUEST_IID-$CI_PROJECT_ROOT_NAMESPACE.cloud.okteto.net"
     on_stop: stop-review
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
@@ -130,7 +130,7 @@ stop-review:
   image: okteto/okteto:1.13.4
   when: manual
   environment:
-    name: $OKTETO_PREVIEW_NS
+    name: "mr-${CI_MERGE_REQUEST_IID}-${CI_PROJECT_ROOT_NAMESPACE}"
     action: stop
   script:
     - export OKTETO_TOKEN=$(echo $OKTETO_TOKEN | base64 -d)
