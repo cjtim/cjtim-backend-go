@@ -105,7 +105,7 @@ review:
   script:
     - export OKTETO_TOKEN=$(echo $OKTETO_TOKEN | base64 -d)
     - okteto namespace
-    - okteto preview deploy ${OKTETO_PREVIEW_NS} --scope personal --branch $CI_COMMIT_REF_NAME --repository $CI_REPOSITORY_URL --wait
+    - okteto preview deploy ${OKTETO_PREVIEW_NS} --scope personal --branch $CI_COMMIT_REF_NAME --repository $CI_REPOSITORY_URL --wait --var TAG=$TAG
   environment:
     name: review/$CI_COMMIT_REF_SLUG
     url: https://${OKTETO_PREVIEW_NS}.cloud.okteto.net
