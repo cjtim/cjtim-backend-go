@@ -6,19 +6,17 @@ import (
 	"io"
 	"log"
 	"net/url"
-	"os"
 
 	"google.golang.org/api/iterator"
 
 	"cloud.google.com/go/storage"
+	"github.com/cjtim/cjtim-backend-go/config"
 	"github.com/google/uuid"
-	"github.com/joho/godotenv"
 	"google.golang.org/api/option"
 )
 
-var _ = godotenv.Load()
-var projectID = os.Getenv("GCLOUD_PROJECT_ID")
-var bucketName = os.Getenv("GCLOUD_BUCKET_NAME")
+var projectID = config.Config.GProjectID
+var bucketName = config.Config.GBucketName
 
 type Bucket struct {
 	Client *storage.Client

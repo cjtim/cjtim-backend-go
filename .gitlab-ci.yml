@@ -1,6 +1,7 @@
 stages:
   - compile
   - test
+  - review
   - build-container
   - deploy
 
@@ -67,13 +68,45 @@ test:
     - gotestsum --junitfile report.xml --format testname
   variables:
     MONGO_URI: "mongodb://mongodb:mongodb@mongodb"
-  rules: *ci_rule
+  rules: &mr-rule
+    - if: "$CI_COMMIT_BRANCH =~ /^(test)+/"
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
   needs:
     - setup-test
   artifacts:
     when: always
     reports:
       junit: report.xml
+
+review:
+  stage: review
+  image: okteto/okteto:1.13.4
+  variables:
+    APP: review-$CI_COMMIT_REF_SLUG
+  script:
+    - okteto preview deploy review-$CI_COMMIT_REF_SLUG-$CI_PROJECT_ROOT_NAMESPACE --scope personal --branch $CI_COMMIT_REF_NAME --repository $CI_REPOSITORY_URL --wait
+  environment:
+    name: review/$CI_COMMIT_REF_SLUG
+    url: https://review-$CI_COMMIT_REF_SLUG-$CI_PROJECT_ROOT_NAMESPACE.cloud.okteto.net
+    on_stop: stop-review
+  rules: *mr-rule
+  except:
+    - master
+
+stop-review:
+  stage: review
+  image: okteto/okteto:1.13.4
+  when: manual
+  environment:
+    name: review/$CI_COMMIT_REF_SLUG
+    action: stop
+  script:
+    - okteto preview destroy review-$CI_COMMIT_REF_SLUG-$CI_PROJECT_ROOT_NAMESPACE
+  variables:
+    GIT_STRATEGY: none
+  rules: *mr-rule
+  except:
+    - master
 
 # build-container:
 #   stage: build-container
@@ -103,7 +136,7 @@ build-container-okteto:
   services:
     - docker:19-dind
   script:
-    - docker login -u cjtim -p $(echo $OKTETO_TOKEN | base64 -d) $OKTETO_REGISTRY
+    - docker login -u $CI_PROJECT_ROOT_NAMESPACE -p $(echo $OKTETO_TOKEN | base64 -d) $OKTETO_REGISTRY
     - docker build -t $OKTETO_IMAGE_TAG:$TAG -f ci.Dockerfile .
     - docker push $OKTETO_IMAGE_TAG:$TAG
     - docker logout $OKTETO_REGISTRY

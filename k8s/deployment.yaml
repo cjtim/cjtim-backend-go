@@ -16,6 +16,9 @@ spec:
         # Logging agent
         - name: fluentd
           image: grafana/fluent-plugin-loki:master
+          env:
+            - name: 'APP_NAME'
+              value: "cjtim-backend-go"
           command:
             [
               "fluentd",

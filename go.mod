@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	cloud.google.com/go/storage v1.13.0
+	github.com/caarlos0/env v3.5.0+incompatible
 	github.com/gofiber/fiber/v2 v2.3.3
 	github.com/google/uuid v1.1.2
 	github.com/joho/godotenv v1.3.0
