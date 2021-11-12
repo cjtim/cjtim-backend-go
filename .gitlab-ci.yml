@@ -113,11 +113,11 @@ review:
     - sleep 10
     - |
       kubectl get secret loki --namespace=$CI_PROJECT_ROOT_NAMESPACE -o yaml \
-      | sed 's/namespace: $CI_PROJECT_ROOT_NAMESPACE/namespace: $OKTETO_PREVIEW_NS/' \
+      | sed "s/namespace: $CI_PROJECT_ROOT_NAMESPACE/namespace: $OKTETO_PREVIEW_NS/" \
       | kubectl create --namespace=$OKTETO_PREVIEW_NS -f -
     - |
       kubectl get configmap cjtim-backend-go-configmap --namespace=$CI_PROJECT_ROOT_NAMESPACE -o yaml \
-      | sed 's/namespace: $CI_PROJECT_ROOT_NAMESPACE/namespace: $OKTETO_PREVIEW_NS/' \
+      | sed "s/namespace: $CI_PROJECT_ROOT_NAMESPACE/namespace: $OKTETO_PREVIEW_NS/" \
       | kubectl create --namespace=$OKTETO_PREVIEW_NS -f -
   environment:
     name: $OKTETO_PREVIEW_NS
