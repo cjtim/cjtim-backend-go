@@ -1,8 +1,8 @@
 stages:
   - compile
   - test
-  - review
   - build-container
+  - review
   - deploy
 
 variables:
@@ -78,13 +78,27 @@ test:
     reports:
       junit: report.xml
 
+build-container-okteto:
+  stage: build-container
+  image: docker:19
+  services:
+    - docker:19-dind
+  script:
+    - docker login -u $CI_PROJECT_ROOT_NAMESPACE -p $(echo $OKTETO_TOKEN | base64 -d) $OKTETO_REGISTRY
+    - docker build -t $OKTETO_IMAGE_TAG:$TAG -f ci.Dockerfile .
+    - docker push $OKTETO_IMAGE_TAG:$TAG
+    - docker logout $OKTETO_REGISTRY
+  dependencies:
+    - compile
+  rules: *ci_rule
+
 review:
   stage: review
   image: okteto/okteto:1.13.4
   variables:
     APP: review-$CI_COMMIT_REF_SLUG
   script:
-    - okteto preview deploy review-$CI_COMMIT_REF_SLUG-$CI_PROJECT_ROOT_NAMESPACE --scope personal --branch $CI_COMMIT_REF_NAME --repository $CI_REPOSITORY_URL --wait
+    - okteto preview deploy review-$CI_COMMIT_REF_SLUG-$CI_PROJECT_ROOT_NAMESPACE --scope personal --branch $CI_COMMIT_REF_NAME --repository $CI_REPOSITORY_URL --wait --var TAG=$TAG
   environment:
     name: review/$CI_COMMIT_REF_SLUG
     url: https://review-$CI_COMMIT_REF_SLUG-$CI_PROJECT_ROOT_NAMESPACE.cloud.okteto.net
@@ -104,7 +118,6 @@ stop-review:
     GIT_STRATEGY: none
   only:
     - merge_requests
-
 
 # build-container:
 #   stage: build-container
@@ -128,21 +141,6 @@ stop-review:
 #     - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
 #     - if: "$CI_COMMIT_BRANCH =~ /^(test)+/"
 
-build-container-okteto:
-  stage: build-container
-  image: docker:19
-  services:
-    - docker:19-dind
-  script:
-    - docker login -u $CI_PROJECT_ROOT_NAMESPACE -p $(echo $OKTETO_TOKEN | base64 -d) $OKTETO_REGISTRY
-    - docker build -t $OKTETO_IMAGE_TAG:$TAG -f ci.Dockerfile .
-    - docker push $OKTETO_IMAGE_TAG:$TAG
-    - docker logout $OKTETO_REGISTRY
-  dependencies:
-    - compile
-  rules:
-    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
-    - if: "$CI_COMMIT_BRANCH =~ /^(test)+/"
 # deploy:
 #   stage: deploy
 #   needs:
