@@ -4,11 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"os"
 
+	"github.com/cjtim/cjtim-backend-go/config"
 	"github.com/cjtim/cjtim-backend-go/pkg/utils"
 	"github.com/cjtim/cjtim-backend-go/repository"
-	"github.com/joho/godotenv"
 )
 
 type RebrandlyNewUrlReq struct {
@@ -18,8 +17,6 @@ type RebrandlyNewUrlReq struct {
 type RebrandlyDomainReq struct {
 	Fullname string `json:"fullName"`
 }
-
-var _ = godotenv.Load()
 
 // Add -
 func Add(originalURL string) (*repository.URLScheama, error) {
@@ -34,8 +31,8 @@ func Add(originalURL string) (*repository.URLScheama, error) {
 	}
 	headers := map[string]string{
 		"Content-Type": "application/json",
-		"apikey":       os.Getenv("REBRANDLY_API"),
-		"workspace":    os.Getenv("REBRANDLY_WORDSPACE"),
+		"apikey":       config.Config.RebrandlyKey,
+		"workspace":    config.Config.RebrandlyWorkspace,
 	}
 	resp, respBody, err := utils.Http(&utils.HttpReq{
 		Method:  http.MethodPost,
@@ -58,7 +55,7 @@ func Add(originalURL string) (*repository.URLScheama, error) {
 
 func Delete(id string) error {
 	headers := map[string]string{
-		"apikey": os.Getenv("REBRANDLY_API"),
+		"apikey": config.Config.RebrandlyKey,
 	}
 	resp, body, err := utils.Http(&utils.HttpReq{
 		Method:  http.MethodDelete,

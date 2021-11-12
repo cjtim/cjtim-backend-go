@@ -3,6 +3,7 @@ package middlewares
 import (
 	"os"
 
+	"github.com/cjtim/cjtim-backend-go/config"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -19,9 +20,8 @@ func InitZap() *zap.Logger {
 	errorFatalLevel := zap.LevelEnablerFunc(func(level zapcore.Level) bool {
 		return level == zapcore.ErrorLevel || level == zapcore.FatalLevel
 	})
-
 	w := zapcore.AddSync(&lumberjack.Logger{
-		Filename:   "/var/log/cjtim-backend-go.log",
+		Filename:   config.Config.LogFilePath,
 		MaxSize:    10, // megabytes
 		MaxBackups: 1,
 		MaxAge:     1, // days

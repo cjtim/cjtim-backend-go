@@ -5,13 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 
+	"github.com/cjtim/cjtim-backend-go/config"
 	"github.com/cjtim/cjtim-backend-go/pkg/utils"
-	"github.com/joho/godotenv"
 )
-
-var _ = godotenv.Load()
 
 func get(queryParams map[string]string, targetAPI string) (*AirVisualResponse, error) {
 	resp, respBody, err := utils.Http(&utils.HttpReq{
@@ -38,14 +35,14 @@ func GetByLocation(lat float64, lon float64) (*AirVisualResponse, error) {
 	return get(map[string]string{
 		"lat": fmt.Sprintf("%f", lat),
 		"lon": fmt.Sprintf("%f", lon),
-		"key": os.Getenv("AIR_API_KEY"),
-	}, "http://api.airvisual.com/v2/nearest_city")
+		"key": config.Config.AirVisualKey,
+	}, config.Config.AirVisualAPINearestCity)
 }
 func GetPhayaThaiCity() (*AirVisualResponse, error) {
 	return get(map[string]string{
 		"city":    "Phaya Thai",
 		"state":   "Bangkok",
 		"country": "Thailand",
-		"key":     os.Getenv("AIR_API_KEY"),
-	}, "http://api.airvisual.com/v2/city")
+		"key":     config.Config.AirVisualKey,
+	}, config.Config.AirVisualAPICity)
 }
