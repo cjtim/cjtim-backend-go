@@ -41,7 +41,7 @@ spec:
         # Application
         - name: cjtim-backend-go
           # TAG will be replace during Gitlab CI pipeline
-          image: registry.cloud.okteto.net/cjtim/cjtim-backend-go:TAG
+          image: registry.cloud.okteto.net/NS/cjtim-backend-go:TAG
           envFrom:
             - configMapRef:
                 name: cjtim-backend-go-configmap
