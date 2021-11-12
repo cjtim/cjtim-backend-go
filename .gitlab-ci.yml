@@ -90,8 +90,6 @@ review:
     url: https://review-$CI_COMMIT_REF_SLUG-$CI_PROJECT_ROOT_NAMESPACE.cloud.okteto.net
     on_stop: stop-review
   rules: *mr-rule
-  except:
-    - master
 
 stop-review:
   stage: review
@@ -104,9 +102,9 @@ stop-review:
     - okteto preview destroy review-$CI_COMMIT_REF_SLUG-$CI_PROJECT_ROOT_NAMESPACE
   variables:
     GIT_STRATEGY: none
-  rules: *mr-rule
-  except:
-    - master
+  only:
+    - merge_requests
+
 
 # build-container:
 #   stage: build-container
