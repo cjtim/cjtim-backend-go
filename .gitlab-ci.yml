@@ -17,6 +17,7 @@ variables:
 
   MR_ID: $CI_MERGE_REQUEST_IID
   OKTETO_PREVIEW_NS: mr-$MR_ID-$CI_PROJECT_ROOT_NAMESPACE
+  OKTETO_PREVIEW_URL: "https://${OKTETO_PREVIEW_NS}.cloud.okteto.net"
   TAG: $CI_COMMIT_SHORT_SHA
 
 services:
@@ -111,7 +112,7 @@ review:
       --wait --var TAG=$TAG
   environment:
     name: $OKTETO_PREVIEW_NS
-    url: https://$OKTETO_PREVIEW_NS.cloud.okteto.net
+    url: $OKTETO_PREVIEW_URL
     on_stop: stop-review
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
