@@ -39,6 +39,7 @@ func Get(c *fiber.Ctx) error {
 		if err != nil {
 			return nil
 		}
+		return c.JSON(data)
 	}
 	if err != nil {
 		return err

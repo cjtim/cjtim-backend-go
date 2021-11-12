@@ -64,12 +64,11 @@ func Test_Get_NoUser(t *testing.T) {
 		t.Fatal(err)
 	}
 	expect := repository.BinanceScheama{
-		LineUID:          "aaaaaaaaaabbbbbbbbb",
-		LineNotifyToken:  "",
-		BinanceApiKey:    "",
-		BinanceSecretKey: "",
-		Prices:           map[string]interface{}{},
-		LineNotifyTime:   5,
+		LineUID: "aaaaaaaaaabbbbbbbbb",
+		Prices: map[string]interface{}{
+			"BNB": 1,
+		},
+		LineNotifyTime: 5,
 	}
 
 	assert.Equal(t, expect.LineUID, actual.LineUID)
