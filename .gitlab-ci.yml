@@ -109,7 +109,8 @@ review:
       --scope personal \
       --branch $CI_COMMIT_REF_NAME \
       --repository $CI_REPOSITORY_URL \
-      --wait --var TAG=$TAG
+      --var TAG=$TAG
+    - sleep 10
     - |
       kubectl get secret loki -o yaml \
       | sed 's/namespace: $CI_PROJECT_ROOT_NAMESPACE/namespace: $OKTETO_PREVIEW_NS/' \
