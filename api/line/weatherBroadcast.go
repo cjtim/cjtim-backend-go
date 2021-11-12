@@ -1,22 +1,18 @@
 package line_controllers
 
 import (
-	"os"
-
+	"github.com/cjtim/cjtim-backend-go/config"
 	"github.com/cjtim/cjtim-backend-go/pkg/airvisual"
 	"github.com/cjtim/cjtim-backend-go/pkg/line"
 	"github.com/cjtim/cjtim-backend-go/pkg/utils"
 	"github.com/gofiber/fiber/v2"
-	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 )
-
-var _ = godotenv.Load()
 
 // WeatherBroadcast - Broadcast Weather to line using CRON
 func WeatherBroadcast(c *fiber.Ctx) error {
 	headers := utils.HeadersToMapStr(c)
-	if headers["Authorization"] != os.Getenv("SECRET_PASSPHRASE") {
+	if headers["Authorization"] != config.Config.SecretPassphrase {
 		return c.SendStatus(fiber.StatusForbidden)
 	}
 	resp, err := airvisual.GetPhayaThaiCity()

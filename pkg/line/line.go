@@ -5,15 +5,13 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
-	"os"
 
+	"github.com/cjtim/cjtim-backend-go/config"
 	"github.com/cjtim/cjtim-backend-go/pkg/utils"
-	"github.com/joho/godotenv"
 	"github.com/line/line-bot-sdk-go/linebot"
 )
 
-var _ = godotenv.Load()
-var LineBot, _ = linebot.New(os.Getenv("LINE_CHANNEL_SECRET"), os.Getenv("LINE_CHANNEL_ACCESS_TOKEN"))
+var LineBot, _ = linebot.New(config.Config.LineChannelSecret, config.Config.LineChannelAccessToken)
 
 func LineIsTokenValid(accToken string) error {
 
@@ -74,7 +72,7 @@ func GetContent(messageID string) ([]byte, string, error) {
 func Reply(replayToken string, msgs []interface{}) error {
 	headers := map[string]string{
 		"Content-Type":  "application/json",
-		"Authorization": "Bearer " + os.Getenv("LINE_CHANNEL_ACCESS_TOKEN"),
+		"Authorization": "Bearer " + config.Config.LineChannelAccessToken,
 	}
 	resp, body, err := utils.Http(&utils.HttpReq{
 		Method:  http.MethodPost,
@@ -97,7 +95,7 @@ func Reply(replayToken string, msgs []interface{}) error {
 func Broadcast(msgs []interface{}) error {
 	headers := map[string]string{
 		"Content-Type":  "application/json",
-		"Authorization": "Bearer " + os.Getenv("LINE_CHANNEL_ACCESS_TOKEN"),
+		"Authorization": "Bearer " + config.Config.LineChannelAccessToken,
 	}
 	resp, body, err := utils.Http(&utils.HttpReq{
 		Method:  http.MethodPost,

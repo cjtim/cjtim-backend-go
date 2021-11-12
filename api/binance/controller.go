@@ -3,25 +3,26 @@ package binance
 import (
 	"context"
 	"net/http"
-	"os"
 	"time"
 
+	"github.com/cjtim/cjtim-backend-go/config"
 	"github.com/cjtim/cjtim-backend-go/pkg/binance"
 	"github.com/cjtim/cjtim-backend-go/pkg/utils"
 	"github.com/cjtim/cjtim-backend-go/repository"
 	"github.com/gofiber/fiber/v2"
 	"github.com/line/line-bot-sdk-go/linebot"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/zap"
 )
 
 func Get(c *fiber.Ctx) error {
 	data := repository.BinanceScheama{}
 	user := c.Locals("user").(*linebot.UserProfileResponse)
-	collection := repository.DB.Collection("binance")
+	collection := repository.GetCollection(repository.Binance)
 	result := collection.FindOne(context.TODO(), bson.M{"lineUid": user.UserID})
-	userNotFound := result.Decode(&data)
-	if userNotFound != nil {
+	err := result.Decode(&data)
+	if err == mongo.ErrNoDocuments {
 		data = repository.BinanceScheama{
 			LineUID:          user.UserID,
 			LineNotifyToken:  "",
@@ -38,6 +39,10 @@ func Get(c *fiber.Ctx) error {
 		if err != nil {
 			return nil
 		}
+		return c.JSON(data)
+	}
+	if err != nil {
+		return err
 	}
 	return c.JSON(data)
 }
@@ -45,7 +50,7 @@ func Get(c *fiber.Ctx) error {
 func GetWallet(c *fiber.Ctx) error {
 	user := c.Locals("user").(*linebot.UserProfileResponse)
 	userBinance := repository.BinanceScheama{}
-	collection := repository.DB.Collection("binance")
+	collection := repository.GetCollection(repository.Binance)
 	data := collection.FindOne(context.TODO(), bson.M{"lineUid": user.UserID})
 	err := data.Decode(&userBinance)
 	if err != nil {
@@ -70,17 +75,17 @@ func UpdatePrice(c *fiber.Ctx) error {
 		return err
 	}
 	user := c.Locals("user").(*linebot.UserProfileResponse)
-	collection := repository.DB.Collection("binance")
+	collection := repository.GetCollection(repository.Binance)
 	collection.FindOneAndReplace(context.TODO(), bson.M{"lineUid": user.UserID}, data)
 	return c.SendStatus(200)
 }
 
 func Cronjob(c *fiber.Ctx) error {
 	headers := utils.HeadersToMapStr(c)
-	if headers["Authorization"] != os.Getenv("SECRET_PASSPHRASE") {
+	if headers["Authorization"] != config.Config.SecretPassphrase {
 		return c.SendStatus(fiber.StatusForbidden)
 	}
-	collection := repository.DB.Collection("binance")
+	collection := repository.GetCollection(repository.Binance)
 	data := &[]repository.BinanceScheama{}
 	cur, err := collection.Find(context.TODO(), bson.M{})
 	if err != nil {
@@ -103,9 +108,9 @@ func Cronjob(c *fiber.Ctx) error {
 			zap.L().Info("Trigger binance line notify", zap.String("lineuid", user.LineUID))
 			_, _, _ = utils.Http(&utils.HttpReq{
 				Method: http.MethodPost,
-				URL:    os.Getenv("MICROSERVICE_BINANCE_LINE_NOTIFY_URL"),
+				URL:    config.Config.LineNotifyURL,
 				Headers: map[string]string{
-					"Authorization": os.Getenv("SECRET_PASSPHRASE"),
+					"Authorization": config.Config.SecretPassphrase,
 				},
 				Body: user,
 			})

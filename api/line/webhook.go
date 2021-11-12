@@ -3,18 +3,15 @@ package line_controllers
 import (
 	"bytes"
 	"net/http"
-	"os"
 
+	"github.com/cjtim/cjtim-backend-go/config"
 	"github.com/cjtim/cjtim-backend-go/pkg/airvisual"
 	"github.com/cjtim/cjtim-backend-go/pkg/files"
 	"github.com/cjtim/cjtim-backend-go/pkg/line"
 	"github.com/cjtim/cjtim-backend-go/pkg/utils"
 	"github.com/gofiber/fiber/v2"
-	"github.com/joho/godotenv"
 	"github.com/line/line-bot-sdk-go/linebot"
 )
-
-var _ = godotenv.Load()
 
 // Webhook - for line webhook
 func Webhook(c *fiber.Ctx) error {
@@ -27,7 +24,7 @@ func Webhook(c *fiber.Ctx) error {
 	for k, v := range utils.HeadersToMapStr(c) {
 		httpReq.Header.Set(k, v)
 	}
-	event, err := linebot.ParseRequest(os.Getenv("LINE_CHANNEL_SECRET"), httpReq)
+	event, err := linebot.ParseRequest(config.Config.LineChannelSecret, httpReq)
 	if err != nil {
 		return err
 	}

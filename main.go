@@ -8,11 +8,15 @@ import (
 	"syscall"
 
 	"github.com/cjtim/cjtim-backend-go/api"
+	"github.com/cjtim/cjtim-backend-go/config"
 	"github.com/cjtim/cjtim-backend-go/middlewares"
 	"github.com/cjtim/cjtim-backend-go/repository"
 	"github.com/gofiber/fiber/v2"
-	_ "github.com/joho/godotenv/autoload"
 	"go.uber.org/zap"
+)
+
+var (
+	app *fiber.App
 )
 
 func main() {
@@ -27,10 +31,10 @@ func main() {
 		zap.L().Fatal("Database start error", zap.Error(err))
 	}
 	repository.Client = client
-	repository.DB = client.Database(os.Getenv("MONGO_DB"))
+	repository.DB = client.Database(config.Config.MongoDB)
 
-	app := startServer()
-	listen := fmt.Sprintf(":%s", os.Getenv("PORT"))
+	app = startServer()
+	listen := fmt.Sprintf(":%d", config.Config.Port)
 	if err := app.Listen(listen); err != nil {
 		repository.DB.Client().Disconnect(context.TODO())
 		zap.L().Info("MongoDB disconected!")
@@ -54,11 +58,12 @@ func startServer() *fiber.App {
 func setupCloseHandler() {
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(c, os.Interrupt, syscall.SIGINT)
 	go func() {
 		<-c
 		zap.L().Info("Got SIGTERM, terminating program...")
 		repository.Client.Disconnect(context.TODO())
 		zap.L().Info("MongoDB disconected!")
-		os.Exit(0)
+		app.Server().Shutdown()
 	}()
 }

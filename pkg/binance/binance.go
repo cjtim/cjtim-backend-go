@@ -24,12 +24,15 @@ func ComputeHmac256(message string, secret string) string {
 func GetBinanceAccount(apiKey string, secretKey string) (map[string]interface{}, error) {
 	timeNow := time.Now().UnixNano() / int64(time.Millisecond)
 	signature := ComputeHmac256("timestamp="+fmt.Sprint(timeNow), secretKey)
-	url := "https://api.binance.com/api/v3/account?timestamp=" + fmt.Sprint(timeNow)
-	url += "&signature=" + signature
+	url := "https://api.binance.com/api/v3/account"
 	resp, respBody, err := utils.Http(&utils.HttpReq{
 		Method:  http.MethodGet,
 		URL:     url,
 		Headers: map[string]string{"X-MBX-APIKEY": apiKey},
+		Querys: map[string]string{
+			"timestamp": fmt.Sprint(timeNow),
+			"signature": signature,
+		},
 	})
 	if err != nil {
 		return nil, err

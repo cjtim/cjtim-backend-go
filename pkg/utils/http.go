@@ -3,8 +3,11 @@ package utils
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 )
 
@@ -19,6 +22,7 @@ type HttpReq struct {
 
 func doRequest(req *http.Request) (resp *http.Response, body []byte, err error) {
 	client := &http.Client{Timeout: 15 * time.Second}
+	fmt.Printf("req.RequestURI: %v\n", req.URL.RawQuery)
 	resp, err = client.Do(req)
 	if err != nil {
 		return &http.Response{}, nil, err
@@ -57,11 +61,11 @@ func Http(httpReq *HttpReq) (*http.Response, []byte, error) {
 	}
 
 	// appending querys
-	q := req.URL.Query()
+	rawQuery := ""
 	for query, value := range httpReq.Querys {
-		q.Add(query, value)
+		rawQuery += fmt.Sprintf("&%s=%s", query, url.QueryEscape(value))
 	}
-	req.URL.RawQuery = q.Encode()
+	req.URL.RawQuery = strings.TrimPrefix(rawQuery, "&")
 
 	// appending headers
 	for header, value := range httpReq.Headers {
