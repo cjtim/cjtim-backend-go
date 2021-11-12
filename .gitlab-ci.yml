@@ -105,19 +105,19 @@ review:
     - export OKTETO_TOKEN=$(echo $OKTETO_TOKEN | base64 -d)
     - okteto namespace
     - |
-      kubectl get secret loki -o yaml \
-      | sed 's/namespace: $CI_PROJECT_ROOT_NAMESPACE/namespace: $OKTETO_PREVIEW_NS/' \
-      | kubectl create -f -
-    - |
-      kubectl get configmap cjtim-backend-go-configmap -o yaml \
-      | sed 's/namespace: $CI_PROJECT_ROOT_NAMESPACE/namespace: $OKTETO_PREVIEW_NS/' \
-      | kubectl create -f -
-    - |
       okteto preview deploy $OKTETO_PREVIEW_NS \
       --scope personal \
       --branch $CI_COMMIT_REF_NAME \
       --repository $CI_REPOSITORY_URL \
       --wait --var TAG=$TAG
+    - |
+      kubectl get secret loki -o yaml \
+      | sed 's/namespace: $CI_PROJECT_ROOT_NAMESPACE/namespace: $OKTETO_PREVIEW_NS/' \
+      | kubectl create -n $OKTETO_PREVIEW_NS -f -
+    - |
+      kubectl get configmap cjtim-backend-go-configmap -o yaml \
+      | sed 's/namespace: $CI_PROJECT_ROOT_NAMESPACE/namespace: $OKTETO_PREVIEW_NS/' \
+      | kubectl create -n $OKTETO_PREVIEW_NS -f -
   environment:
     name: $OKTETO_PREVIEW_NS
     url: $OKTETO_PREVIEW_URL
