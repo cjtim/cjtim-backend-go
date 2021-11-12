@@ -16,7 +16,7 @@ variables:
   DOCKER_IMAGE_TAG: $CI_REGISTRY/$CI_PROJECT_PATH
 
   MR_ID: $CI_MERGE_REQUEST_IID
-  OKTETO_PREVIEW_NS: mr-$MR_ID-$CI_PROJECT_ROOT_NAMESPACE
+  OKTETO_PREVIEW_NS: "mr-${MR_ID}-${CI_PROJECT_ROOT_NAMESPACE}"
   OKTETO_PREVIEW_URL: "https://${OKTETO_PREVIEW_NS}.cloud.okteto.net"
   TAG: $CI_COMMIT_SHORT_SHA
 
@@ -104,6 +104,14 @@ review:
   script:
     - export OKTETO_TOKEN=$(echo $OKTETO_TOKEN | base64 -d)
     - okteto namespace
+    - |
+      kubectl get secret loki -o yaml \
+      | sed 's/namespace: $CI_PROJECT_ROOT_NAMESPACE/namespace: $OKTETO_PREVIEW_NS/' \
+      | kubectl create -f -
+    - |
+      kubectl get configmap cjtim-backend-go-configmap -o yaml \
+      | sed 's/namespace: $CI_PROJECT_ROOT_NAMESPACE/namespace: $OKTETO_PREVIEW_NS/' \
+      | kubectl create -f -
     - |
       okteto preview deploy $OKTETO_PREVIEW_NS \
       --scope personal \
