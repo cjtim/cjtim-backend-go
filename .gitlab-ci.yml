@@ -13,6 +13,7 @@ variables:
   DOCKER_IMAGE_TAG: $CI_REGISTRY/$CI_PROJECT_PATH
   OKTETO_REGISTRY: registry.cloud.okteto.net
   OKTETO_IMAGE_TAG: $OKTETO_REGISTRY/$CI_PROJECT_PATH
+  OKTETO_PREVIEW_NS: review-$CI_COMMIT_REF_SLUG-$CI_PROJECT_ROOT_NAMESPACE
   TAG: $CI_COMMIT_SHORT_SHA
   DOCKER_HOST: tcp://docker:2375/
   DOCKER_DRIVER: overlay2
@@ -85,12 +86,19 @@ build-container-okteto:
     - docker:19-dind
   script:
     - docker login -u $CI_PROJECT_ROOT_NAMESPACE -p $(echo $OKTETO_TOKEN | base64 -d) $OKTETO_REGISTRY
-    - docker build -t $OKTETO_IMAGE_TAG:$TAG -f ci.Dockerfile .
-    - docker push $OKTETO_IMAGE_TAG:$TAG
+    - docker build -t $OKTETO_REGISTRY/$NAMESPACE:$TAG -f ci.Dockerfile .
+    - docker push $OKTETO_REGISTRY/$NAMESPACE:$TAG
     - docker logout $OKTETO_REGISTRY
   dependencies:
     - compile
-  rules: *ci_rule
+  rules:
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+      variables:
+        NAMESPACE: $CI_PROJECT_ROOT_NAMESPACE
+    - if: "$CI_COMMIT_BRANCH =~ /^(test)+/"
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      variables:
+          NAMESPACE: ${OKTETO_PREVIEW_NS}
 
 review:
   stage: review
@@ -98,10 +106,12 @@ review:
   variables:
     APP: review-$CI_COMMIT_REF_SLUG
   script:
-    - okteto preview deploy review-$CI_COMMIT_REF_SLUG-$CI_PROJECT_ROOT_NAMESPACE --scope personal --branch $CI_COMMIT_REF_NAME --repository $CI_REPOSITORY_URL --wait --var TAG=$TAG
+    - export OKTETO_TOKEN=$(echo $OKTETO_TOKEN | base64 -d)
+    - okteto namespace
+    - okteto preview deploy ${OKTETO_PREVIEW_NS} --scope personal --branch $CI_COMMIT_REF_NAME --repository $CI_REPOSITORY_URL --wait --var TAG=$TAG
   environment:
     name: review/$CI_COMMIT_REF_SLUG
-    url: https://review-$CI_COMMIT_REF_SLUG-$CI_PROJECT_ROOT_NAMESPACE.cloud.okteto.net
+    url: https://${OKTETO_PREVIEW_NS}.cloud.okteto.net
     on_stop: stop-review
   rules: *mr-rule
 
@@ -113,7 +123,9 @@ stop-review:
     name: review/$CI_COMMIT_REF_SLUG
     action: stop
   script:
-    - okteto preview destroy review-$CI_COMMIT_REF_SLUG-$CI_PROJECT_ROOT_NAMESPACE
+    - export OKTETO_TOKEN=$(echo $OKTETO_TOKEN | base64 -d)
+    - okteto namespace
+    - okteto preview destroy ${OKTETO_PREVIEW_NS}
   variables:
     GIT_STRATEGY: none
   only:
