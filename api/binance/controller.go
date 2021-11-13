@@ -105,15 +105,20 @@ func Cronjob(c *fiber.Ctx) error {
 			needNotify = (currentMinute % int(userTime)) == 0
 		}
 		if needNotify {
-			zap.L().Info("Trigger binance line notify", zap.String("lineuid", user.LineUID))
-			_, _, _ = utils.Http(&utils.HttpReq{
-				Method: http.MethodPost,
-				URL:    config.Config.LineNotifyURL,
-				Headers: map[string]string{
-					"Authorization": config.Config.SecretPassphrase,
-				},
-				Body: user,
-			})
+			go func() {
+				zap.L().Info("Trigger binance line notify", zap.String("lineuid", user.LineUID))
+				resp, _, err := utils.Http(&utils.HttpReq{
+					Method: http.MethodPost,
+					URL:    config.Config.LineNotifyURL,
+					Headers: map[string]string{
+						"Authorization": config.Config.SecretPassphrase,
+					},
+					Body: user,
+				})
+				if err != nil || resp.StatusCode != http.StatusOK {
+					zap.L().Error("Trigger binance line notify", zap.String("lineuid", user.LineUID))
+				}
+			}()
 		}
 	}
 	return c.SendStatus(200)

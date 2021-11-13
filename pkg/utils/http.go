@@ -22,7 +22,6 @@ type HttpReq struct {
 
 func doRequest(req *http.Request) (resp *http.Response, body []byte, err error) {
 	client := &http.Client{Timeout: 15 * time.Second}
-	fmt.Printf("req.RequestURI: %v\n", req.URL.RawQuery)
 	resp, err = client.Do(req)
 	if err != nil {
 		return &http.Response{}, nil, err
@@ -49,6 +48,7 @@ func Http(httpReq *HttpReq) (*http.Response, []byte, error) {
 		if err != nil {
 			return nil, nil, err
 		}
+		httpReq.Headers["Content-Type"] = "application/json"
 	}
 
 	req, err := http.NewRequest(
