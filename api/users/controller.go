@@ -17,26 +17,25 @@ func Me(c *fiber.Ctx) error {
 func Update(c *fiber.Ctx) error {
 	profile := c.Locals("user").(*linebot.UserProfileResponse)
 	profileFilter := bson.M{"lineUid": profile.UserID}
-	collection := repository.DB.Collection("users")
 	body := repository.UserScheama{}
 
 	err := c.BodyParser(&body)
 	if err != nil {
 		return err
 	}
-	userInDatabase, err := collection.CountDocuments(context.TODO(), profileFilter)
+	userInDatabase, err := repository.UserRepo.CountDocuments(context.TODO(), profileFilter)
 	if err != nil {
 		return err
 	}
 	if userInDatabase < 1 {
 		// new user
 		body.LineUid = profile.UserID
-		_, err := collection.InsertOne(context.TODO(), body)
+		_, err := repository.UserRepo.InsertOne(context.TODO(), &body)
 		if err != nil {
 			return err
 		}
 	} else {
-		_, err = collection.UpdateOne(context.TODO(),profileFilter, bson.M{"$set" :body})
+		_, err = repository.UserRepo.UpdateOne(context.TODO(), profileFilter, bson.M{"$set": body})
 		if err != nil {
 			return err
 		}

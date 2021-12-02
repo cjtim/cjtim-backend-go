@@ -26,12 +26,10 @@ func main() {
 
 	setupCloseHandler()
 
-	client, err := repository.MongoClient()
+	_, err := repository.MongoClient()
 	if err != nil {
 		zap.L().Fatal("Database start error", zap.Error(err))
 	}
-	repository.Client = client
-	repository.DB = client.Database(config.Config.MongoDB)
 
 	app = startServer()
 	listen := fmt.Sprintf(":%d", config.Config.Port)

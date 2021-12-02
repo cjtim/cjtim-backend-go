@@ -8,7 +8,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/line/line-bot-sdk-go/linebot"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type URLAddBody struct {
@@ -30,8 +29,8 @@ func Add(c *fiber.Ctx) error {
 		return err
 	}
 	resp.LineUID = user.UserID
-	insertID, err := repository.DB.Collection("urls").InsertOne(context.TODO(), resp)
-	resp.ID = insertID.InsertedID.(primitive.ObjectID)
+	insertID, err := repository.UrlRepo.InsertOne(context.TODO(), &resp)
+	resp.ID = insertID
 	if err != nil {
 		return err
 	}
@@ -41,11 +40,7 @@ func Add(c *fiber.Ctx) error {
 func List(c *fiber.Ctx) error {
 	urls := &[]repository.URLScheama{}
 	user := c.Locals("user").(*linebot.UserProfileResponse)
-	data, err := repository.DB.Collection("urls").Find(context.TODO(),bson.M{"lineUid": user.UserID})
-	if err != nil {
-		return err
-	}
-	err = data.All(context.TODO() ,urls)
+	err := repository.UrlRepo.Find(&urls, bson.M{"lineUid": user.UserID})
 	if err != nil {
 		return err
 	}
@@ -56,15 +51,13 @@ func List(c *fiber.Ctx) error {
 
 func Delete(c *fiber.Ctx) error {
 	user := c.Locals("user").(*linebot.UserProfileResponse)
-	collection := repository.DB.Collection("urls")
 	body := &URLDeleteBody{}
 	err := c.BodyParser(body)
 	if err != nil {
 		return err
 	}
 	url := &repository.URLScheama{}
-	data := collection.FindOne(context.TODO(), bson.M{"lineUid": user.UserID, "shortUrl": body.ShortUrl})
-	err = data.Decode(&url)
+	err = repository.UrlRepo.FindOne(&url, bson.M{"lineUid": user.UserID, "shortUrl": body.ShortUrl})
 	if err != nil {
 		return err
 	}
@@ -72,7 +65,7 @@ func Delete(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	_, err = collection.DeleteMany(context.TODO(), bson.M{
+	_, err = repository.UrlRepo.DeleteMany(context.TODO(), bson.M{
 		"shortUrl": body.ShortUrl,
 		"lineUid":  user.UserID,
 	})

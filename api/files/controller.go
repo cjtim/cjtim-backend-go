@@ -1,7 +1,6 @@
 package files
 
 import (
-	"context"
 	"io/ioutil"
 
 	"github.com/cjtim/cjtim-backend-go/pkg/files"
@@ -32,12 +31,7 @@ func Upload(c *fiber.Ctx) error {
 func List(c *fiber.Ctx) error {
 	user := c.Locals("user").(*linebot.UserProfileResponse)
 	files := &[]repository.FileScheama{}
-	collection := repository.DB.Collection("files")
-	cur, err := collection.Find(context.TODO(), bson.M{"lineUid": user.UserID})
-	if err != nil {
-		return err
-	}
-	err = cur.All(context.TODO(), files)
+	err := repository.FileRepo.Find(&files, bson.M{"lineUid": user.UserID})
 	if err != nil {
 		return err
 	}

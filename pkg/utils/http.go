@@ -35,7 +35,7 @@ func doRequest(req *http.Request) (resp *http.Response, body []byte, err error) 
 	return resp, body, nil
 }
 
-func Http(httpReq *HttpReq) (*http.Response, []byte, error) {
+func HttpPrepareRequest(httpReq *HttpReq) (*http.Request, error) {
 	if httpReq.Querys == nil {
 		httpReq.Querys = map[string]string{}
 	}
@@ -46,7 +46,7 @@ func Http(httpReq *HttpReq) (*http.Response, []byte, error) {
 		bBody, err := json.Marshal(httpReq.Body)
 		httpReq.BodyBytes = bBody
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		httpReq.Headers["Content-Type"] = "application/json"
 	}
@@ -57,7 +57,7 @@ func Http(httpReq *HttpReq) (*http.Response, []byte, error) {
 		bytes.NewBuffer(httpReq.BodyBytes),
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// appending querys
@@ -70,6 +70,14 @@ func Http(httpReq *HttpReq) (*http.Response, []byte, error) {
 	// appending headers
 	for header, value := range httpReq.Headers {
 		req.Header.Add(header, value)
+	}
+	return req, nil
+}
+
+func Http(httpReq *HttpReq) (*http.Response, []byte, error) {
+	req, err := HttpPrepareRequest(httpReq)
+	if err != nil {
+		return nil, nil, err
 	}
 	return doRequest(req)
 }

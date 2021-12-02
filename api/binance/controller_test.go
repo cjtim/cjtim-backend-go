@@ -7,28 +7,18 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"strings"
 	"testing"
-	"time"
 
 	"github.com/cjtim/cjtim-backend-go/api/binance"
+	"github.com/cjtim/cjtim-backend-go/config"
+	"github.com/cjtim/cjtim-backend-go/pkg/utils"
 	"github.com/cjtim/cjtim-backend-go/repository"
 	"github.com/gofiber/fiber/v2"
 	"github.com/line/line-bot-sdk-go/linebot"
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
-
-func init() {
-	client, err := repository.MongoClient()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	repository.DB = client.Database("production")
-	repository.Client = client
-}
 
 func initialBinanceMock() *fiber.App {
 	app := fiber.New()
@@ -49,7 +39,23 @@ func initialBinanceMock() *fiber.App {
 
 func Test_Get_NoUser(t *testing.T) {
 	app := initialBinanceMock()
+	origFindOne := repository.BinanceRepo.FindOne
+	origInsertOne := repository.BinanceRepo.InsertOne
 
+	repository.BinanceRepo.FindOne = func(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {
+		b, _ := json.Marshal(repository.BinanceScheama{
+			LineUID: "aaaaaaaaaabbbbbbbbb",
+			Prices: map[string]interface{}{
+				"BNB": 1,
+			},
+			LineNotifyTime: 5,
+		})
+		json.Unmarshal(b, data)
+		return nil
+	}
+	repository.BinanceRepo.InsertOne = func(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (primitive.ObjectID, error) {
+		return primitive.NewObjectID(), nil
+	}
 	req := httptest.NewRequest(http.MethodGet, "/binance/get", nil)
 
 	resp, err := app.Test(req)
@@ -73,60 +79,116 @@ func Test_Get_NoUser(t *testing.T) {
 
 	assert.Equal(t, expect.LineUID, actual.LineUID)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	repository.BinanceRepo.FindOne = origFindOne
+	repository.BinanceRepo.InsertOne = origInsertOne
 }
 
 func Test_GetWallet_Pass(t *testing.T) {
 	app := initialBinanceMock()
+
+	origFindOne := repository.BinanceRepo.FindOne
+
+	repository.BinanceRepo.FindOne = func(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {
+		return nil
+	}
 
 	req := httptest.NewRequest(http.MethodGet, "/binance/wallet", nil)
 
 	resp, err := app.Test(req)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	repository.BinanceRepo.FindOne = origFindOne
 }
 
 func Test_UpdatePrice_Pass(t *testing.T) {
-	data := repository.BinanceScheama{}
-	result := repository.DB.Collection("binance").FindOne(context.TODO(), bson.M{"lineUid": "aaaaaaaaaabbbbbbbbb"})
-	err := result.Decode(&data)
-	assert.Nil(t, err)
-	byteBody, err := json.Marshal(data)
-	assert.Nil(t, err)
+	orgi := repository.BinanceRepo.FindOneAndReplace
+	origFindOneAndReplace := func() {
+		repository.BinanceRepo.FindOneAndReplace = orgi
+	}
+
+	expect := repository.BinanceScheama{
+		ID:               primitive.ObjectID{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+		BinanceSecretKey: "",
+		LineNotifyToken:  "",
+		BinanceApiKey:    "",
+		LineUID:          "aaaaaaaaaabbbbbbbbb",
+		Prices: map[string]interface{}{
+			"BNB": 1,
+		},
+		LineNotifyTime: 5,
+	}
+	repository.BinanceRepo.FindOneAndReplace = func(ctx context.Context, filter, replacement interface{}, opts ...*options.FindOneAndReplaceOptions) error {
+		return nil
+	}
 
 	app := initialBinanceMock()
-
-	req := httptest.NewRequest(http.MethodPost, "/binance/update", strings.NewReader(string(byteBody)))
+	req, err := utils.HttpPrepareRequest(&utils.HttpReq{
+		Method: http.MethodPost,
+		URL:    "/binance/update",
+		Body:   expect,
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+		},
+	})
+	assert.Nil(t, err)
 
 	resp, err := app.Test(req)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusUnprocessableEntity, resp.StatusCode)
+
+	defer resp.Body.Close()
+	defer assert.Equal(t, http.StatusOK, resp.StatusCode)
+	defer origFindOneAndReplace()
 }
 func Test_UpdatePrice_Fail(t *testing.T) {
 	app := initialBinanceMock()
 
-	req := httptest.NewRequest(http.MethodPost, "/binance/update", nil)
+	req, _ := utils.HttpPrepareRequest(&utils.HttpReq{
+		Method: http.MethodPost,
+		URL:    "/binance/update",
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+		},
+	})
 
 	resp, err := app.Test(req)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusUnprocessableEntity, resp.StatusCode)
+	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 }
 
 func Test_Cron(t *testing.T) {
-	needNotify := false
-	user := repository.BinanceScheama{
-		LineNotifyTime: int64(time.Now().Minute()),
+	orig := repository.BinanceRepo.Find
+	origFind := func() {
+		repository.BinanceRepo.Find = orig
 	}
-	userTime := (user.LineNotifyTime) % 60
-	currentMinute := time.Now().Minute()
-	if userTime > 0 {
-		needNotify = (currentMinute % int(userTime)) == 0
-	} else {
-		needNotify = userTime == int64(currentMinute)
+	repository.BinanceRepo.Find = func(data, filter interface{}, opts ...*options.FindOptions) error {
+		return nil
 	}
-	t.Log(currentMinute)
-	if needNotify {
-		t.Log(currentMinute)
-	} else {
-		t.Fatal("Not right time")
-	}
+
+	origLineNotify := config.Config.LineNotifyURL
+	restoreLineNotify := func() { config.Config.LineNotifyURL = origLineNotify }
+
+	// start notify microservice server
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintln(w, "")
+	})
+	s := httptest.NewServer(handler)
+	defer s.Close()
+	config.Config.LineNotifyURL = s.URL
+
+	app := initialBinanceMock()
+
+	req, _ := utils.HttpPrepareRequest(&utils.HttpReq{
+		Method: http.MethodGet,
+		URL:    "/binance/cronjob",
+	})
+
+	resp, err := app.Test(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	defer restoreLineNotify()
+	defer origFind()
 }
