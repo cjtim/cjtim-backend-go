@@ -10,6 +10,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+type Response struct {
+	Files []repository.FileScheama `json:"files"`
+}
+
 func Upload(c *fiber.Ctx) error {
 	file, err := c.FormFile("file")
 	if err != nil {
