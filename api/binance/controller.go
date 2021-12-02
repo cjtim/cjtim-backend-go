@@ -31,8 +31,7 @@ func Get(c *fiber.Ctx) error {
 			},
 			LineNotifyTime: 5,
 		}
-		repository.BinanceRepo.InsertOne(context.TODO(), data)
-		err := repository.BinanceRepo.FindOne(context.TODO(), bson.M{"lineUid": user.UserID})
+		_, err := repository.BinanceRepo.InsertOne(context.TODO(), &data)
 		if err != nil {
 			return nil
 		}

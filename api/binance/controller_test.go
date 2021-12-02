@@ -17,6 +17,7 @@ import (
 	"github.com/line/line-bot-sdk-go/linebot"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -37,7 +38,7 @@ func initialBinanceMock() *fiber.App {
 	return app
 }
 
-func Test_Get_NoUser(t *testing.T) {
+func Test_Get_FoundUser(t *testing.T) {
 	app := initialBinanceMock()
 	origFindOne := repository.BinanceRepo.FindOne
 	origInsertOne := repository.BinanceRepo.InsertOne
@@ -75,6 +76,52 @@ func Test_Get_NoUser(t *testing.T) {
 			"BNB": 1,
 		},
 		LineNotifyTime: 5,
+	}
+
+	assert.Equal(t, expect.LineUID, actual.LineUID)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	repository.BinanceRepo.FindOne = origFindOne
+	repository.BinanceRepo.InsertOne = origInsertOne
+}
+
+func Test_Get_NoUser(t *testing.T) {
+	expect := repository.BinanceScheama{
+		LineUID: "aaaaaaaaaabbbbbbbbb",
+		Prices: map[string]interface{}{
+			"BNB": 1,
+		},
+		LineNotifyTime: 5,
+	}
+
+	app := initialBinanceMock()
+	origFindOne := repository.BinanceRepo.FindOne
+	origInsertOne := repository.BinanceRepo.InsertOne
+
+	findOneCount := 0
+	repository.BinanceRepo.FindOne = func(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {
+		if findOneCount == 0 {
+			findOneCount++
+			return mongo.ErrNoDocuments
+		}
+		b, _ := json.Marshal(expect)
+		return json.Unmarshal(b, data)
+	}
+	repository.BinanceRepo.InsertOne = func(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (primitive.ObjectID, error) {
+		return primitive.NewObjectID(), nil
+	}
+	req := httptest.NewRequest(http.MethodGet, "/binance/get", nil)
+
+	resp, err := app.Test(req)
+	assert.Nil(t, err)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal("cannot parse body")
+	}
+	actual := repository.BinanceScheama{}
+	err = json.Unmarshal(bodyBytes, &actual)
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	assert.Equal(t, expect.LineUID, actual.LineUID)
