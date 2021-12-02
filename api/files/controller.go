@@ -24,13 +24,13 @@ func Upload(c *fiber.Ctx) error {
 		return err
 	}
 	user := c.Locals("user").(*linebot.UserProfileResponse)
-	files.Add(file.Filename, bdata, user.UserID)
-	return nil
+	_, err = files.Add(file.Filename, bdata, user.UserID)
+	return err
 }
 
 func List(c *fiber.Ctx) error {
 	user := c.Locals("user").(*linebot.UserProfileResponse)
-	files := &[]repository.FileScheama{}
+	files := []repository.FileScheama{}
 	err := repository.FileRepo.Find(&files, bson.M{"lineUid": user.UserID})
 	if err != nil {
 		return err

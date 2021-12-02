@@ -2,6 +2,7 @@ package urls
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/cjtim/cjtim-backend-go/pkg/rebrandly"
 	"github.com/cjtim/cjtim-backend-go/repository"
@@ -19,8 +20,8 @@ type URLDeleteBody struct {
 
 func Add(c *fiber.Ctx) error {
 	user := c.Locals("user").(*linebot.UserProfileResponse)
-	body := &URLAddBody{}
-	err := c.BodyParser(body)
+	body := URLAddBody{}
+	err := c.BodyParser(&body)
 	if err != nil {
 		return err
 	}
@@ -29,7 +30,7 @@ func Add(c *fiber.Ctx) error {
 		return err
 	}
 	resp.LineUID = user.UserID
-	insertID, err := repository.UrlRepo.InsertOne(context.TODO(), &resp)
+	insertID, err := repository.UrlRepo.InsertOne(context.TODO(), resp)
 	resp.ID = insertID
 	if err != nil {
 		return err
@@ -38,12 +39,13 @@ func Add(c *fiber.Ctx) error {
 }
 
 func List(c *fiber.Ctx) error {
-	urls := &[]repository.URLScheama{}
 	user := c.Locals("user").(*linebot.UserProfileResponse)
+	urls := []repository.URLScheama{}
 	err := repository.UrlRepo.Find(&urls, bson.M{"lineUid": user.UserID})
 	if err != nil {
 		return err
 	}
+	fmt.Println(urls)
 	return c.JSON(fiber.Map{
 		"urls": urls,
 	})
@@ -51,12 +53,12 @@ func List(c *fiber.Ctx) error {
 
 func Delete(c *fiber.Ctx) error {
 	user := c.Locals("user").(*linebot.UserProfileResponse)
-	body := &URLDeleteBody{}
-	err := c.BodyParser(body)
+	body := URLDeleteBody{}
+	err := c.BodyParser(&body)
 	if err != nil {
 		return err
 	}
-	url := &repository.URLScheama{}
+	url := repository.URLScheama{}
 	err = repository.UrlRepo.FindOne(&url, bson.M{"lineUid": user.UserID, "shortUrl": body.ShortUrl})
 	if err != nil {
 		return err
