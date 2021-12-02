@@ -6,9 +6,6 @@ stages:
   - deploy
 
 variables:
-  MONGO_INITDB_ROOT_USERNAME: mongodb
-  MONGO_INITDB_ROOT_PASSWORD: mongodb
-
   DOCKER_HOST: tcp://docker:2375/
   DOCKER_DRIVER: overlay2
 
@@ -18,10 +15,6 @@ variables:
   MR_ID: $CI_MERGE_REQUEST_IID
   OKTETO_PREVIEW_NS: "mr-${CI_MERGE_REQUEST_IID}-${CI_PROJECT_ROOT_NAMESPACE}"
   TAG: $CI_COMMIT_SHORT_SHA
-
-services:
-  - name: mongo:4.4.6
-    alias: mongodb
 
 .go:
   image: golang:1.16-alpine3.14
@@ -53,14 +46,6 @@ compile:
     - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
-setup-test:
-  stage: compile
-  image: mongo:4.4.6
-  script:
-    - mongo --nodb ./tools/initdb.js
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-
 test:
   stage: test
   image: golang:1.16-alpine3.14
@@ -68,12 +53,9 @@ test:
     - apk add --no-cache gcc musl-dev
     - go get gotest.tools/gotestsum
     - gotestsum --junitfile report.xml --format testname
-  variables:
-    MONGO_URI: "mongodb://mongodb:mongodb@mongodb"
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-  needs:
-    - setup-test
+  needs: []
   artifacts:
     when: always
     reports:
