@@ -51,8 +51,8 @@ test:
   image: golang:1.16-alpine3.14
   script:
     - apk add --no-cache gcc musl-dev
-    - go get gotest.tools/gotestsum
-    - gotestsum --junitfile report.xml --format testname
+    # - go get gotest.tools/gotestsum
+    # - gotestsum --junitfile report.xml --format testname
     # coverage 
     - go get github.com/boumenot/gocover-cobertura
     - go test -coverprofile=coverage.txt -covermode count ./...
@@ -63,7 +63,7 @@ test:
   artifacts:
     when: always
     reports:
-      junit: report.xml
+      # junit: report.xml
       cobertura: coverage.xml
 
 build-container-okteto:
