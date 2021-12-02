@@ -57,9 +57,9 @@ test:
     # coverage
     - go get github.com/boumenot/gocover-cobertura
     - go test -coverprofile=coverage.txt -covermode count ./...
+    # upload to codecov
+    - curl -s https://codecov.io/bash | sh - || true
     - gocover-cobertura < coverage.txt > coverage.xml
-  after_script:
-    - bash <(curl -s https://codecov.io/bash)
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
   needs: []
