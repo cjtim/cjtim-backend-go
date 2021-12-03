@@ -67,7 +67,7 @@ test:
   only:
     - merge_requests
   needs: []
-  coverage: '/github.com/cjtim/cjtim-backend-go\s+.*coverage: \d+.\d+% of statements/'
+  coverage: '/github.com\/cjtim\/cjtim-backend-go\t.*\tcoverage: \d+.\d+% of statements/'
   artifacts:
     when: always
     reports:
