@@ -1,7 +1,6 @@
 package files
 
 import (
-	"context"
 	"io/ioutil"
 
 	"github.com/cjtim/cjtim-backend-go/pkg/files"
@@ -10,6 +9,10 @@ import (
 	"github.com/line/line-bot-sdk-go/linebot"
 	"go.mongodb.org/mongo-driver/bson"
 )
+
+type Response struct {
+	Files []repository.FileScheama `json:"files"`
+}
 
 func Upload(c *fiber.Ctx) error {
 	file, err := c.FormFile("file")
@@ -25,19 +28,14 @@ func Upload(c *fiber.Ctx) error {
 		return err
 	}
 	user := c.Locals("user").(*linebot.UserProfileResponse)
-	files.Add(file.Filename, bdata, user.UserID)
-	return nil
+	_, err = files.Add(file.Filename, bdata, user.UserID)
+	return err
 }
 
 func List(c *fiber.Ctx) error {
 	user := c.Locals("user").(*linebot.UserProfileResponse)
-	files := &[]repository.FileScheama{}
-	collection := repository.DB.Collection("files")
-	cur, err := collection.Find(context.TODO(), bson.M{"lineUid": user.UserID})
-	if err != nil {
-		return err
-	}
-	err = cur.All(context.TODO(), files)
+	files := []repository.FileScheama{}
+	err := repository.FileRepo.Find(&files, bson.M{"lineUid": user.UserID})
 	if err != nil {
 		return err
 	}

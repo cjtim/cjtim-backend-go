@@ -46,11 +46,11 @@ func Add(originalURL string) (*repository.URLScheama, error) {
 	if resp.StatusCode != 200 {
 		return nil, errors.New(string(respBody))
 	}
-	data := &repository.URLScheama{}
-	if err := json.Unmarshal(respBody, data); err != nil {
+	data := repository.URLScheama{}
+	if err := json.Unmarshal(respBody, &data); err != nil {
 		return nil, err
 	}
-	return data, nil
+	return &data, nil
 }
 
 func Delete(id string) error {

@@ -15,28 +15,31 @@ import (
 	"google.golang.org/api/option"
 )
 
-var projectID = config.Config.GProjectID
 var bucketName = config.Config.GBucketName
 
-type Bucket struct {
-	Client *storage.Client
+type c struct {
+	client *storage.Client
+	bucket *storage.BucketHandle
 }
 
-func GetClient() (Bucket, error) {
-	ctx := context.Background()
-	var client, err = storage.NewClient(ctx, option.WithCredentialsFile("./config/serviceAcc.json"))
+func GetClient() (*c, error) {
+	var client, err = storage.NewClient(
+		context.TODO(),
+		option.WithCredentialsFile("./config/serviceAcc.json"),
+	)
 	if err != nil {
 		log.Fatalf("Failed to create client: %v", err)
-		return Bucket{}, err
+		return nil, err
 	}
-	return Bucket{Client: client}, nil
+	return &c{
+		client: client,
+		bucket: client.Bucket(bucketName),
+	}, nil
 }
 
-func (s *Bucket) Upload(path string, byteData []byte) (string, error) {
+func (c *c) Upload(path string, byteData []byte) (string, error) {
 	downloadToken := uuid.New().String()
-	bucket := s.Client.Bucket(bucketName)
-	ctx := context.Background()
-	wc := bucket.Object(path).NewWriter(ctx)
+	wc := c.bucket.Object(path).NewWriter(context.TODO())
 	wc.Metadata = map[string]string{
 		"firebaseStorageDownloadTokens": downloadToken,
 	}
@@ -52,14 +55,14 @@ func (s *Bucket) Upload(path string, byteData []byte) (string, error) {
 	return downloadURL, nil
 }
 
-func (s *Bucket) Delete(path string) error {
-	return s.Client.Bucket(bucketName).Object(path).Delete(context.TODO())
+func (c *c) Delete(path string) error {
+	return c.client.Bucket(bucketName).Object(path).Delete(context.TODO())
 }
 
-func (s *Bucket) List(filename string) ([]string, error) {
+func (c *c) List(filename string) ([]string, error) {
 	query := &storage.Query{StartOffset: filename}
 	var names []string
-	it := s.Client.Bucket(bucketName).Objects(context.TODO(), query)
+	it := c.bucket.Objects(context.TODO(), query)
 	for {
 		attrs, err := it.Next()
 		if err == iterator.Done {
@@ -71,4 +74,8 @@ func (s *Bucket) List(filename string) ([]string, error) {
 		names = append(names, attrs.Name)
 	}
 	return names, nil
+}
+
+func (c *c) Close() error {
+	return c.client.Close()
 }

@@ -6,9 +6,6 @@ stages:
   - deploy
 
 variables:
-  MONGO_INITDB_ROOT_USERNAME: mongodb
-  MONGO_INITDB_ROOT_PASSWORD: mongodb
-
   DOCKER_HOST: tcp://docker:2375/
   DOCKER_DRIVER: overlay2
 
@@ -19,29 +16,35 @@ variables:
   OKTETO_PREVIEW_NS: "mr-${CI_MERGE_REQUEST_IID}-${CI_PROJECT_ROOT_NAMESPACE}"
   TAG: $CI_COMMIT_SHORT_SHA
 
-services:
-  - name: mongo:4.4.6
-    alias: mongodb
-
 .go:
-  image: golang:1.16-alpine3.14
+  image: $GO_IMAGE
   variables:
+    # for build
     GOOS: linux
     GOARCH: amd64
     CGO_ENABLED: 0
-    GOPATH: $CI_PROJECT_DIR/.cache
-  cache:
-    key: $CI_JOB_NAME
-    when: always
-    paths:
-      - $GOPATH
+
+    GO_IMAGE: golang:1.16-alpine3.14
+    GOPATH: /go
+  # cache:
+  #   key: ${CI_COMMIT_REF_NAME}
+  #   when: on_success
+  #   paths:
+  #     - $GOPATH
+  #     - $CI_PROJECT_DIR/vendor
   before_script:
-    - mkdir -p .cache
     - go mod download
+
+.master-and-mr-rules:
+  only:
+    - $CI_DEFAULT_BRANCH
+    - merge_requests
 
 compile:
   stage: compile
-  extends: .go
+  extends:
+    - .go
+    - .master-and-mr-rules
   variables:
     OUTPUT_FILE: main
   script:
@@ -49,54 +52,57 @@ compile:
   artifacts:
     paths:
       - $OUTPUT_FILE
-  rules: &ci_rule
-    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-
-setup-test:
-  stage: compile
-  image: mongo:4.4.6
-  script:
-    - mongo --nodb ./tools/initdb.js
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 test:
   stage: test
-  image: golang:1.16-alpine3.14
-  script:
-    - apk add --no-cache gcc musl-dev
-    - go get gotest.tools/gotestsum
-    - gotestsum --junitfile report.xml --format testname
+  needs: []
+  extends:
+    - .go
+    - .master-and-mr-rules
   variables:
-    MONGO_URI: "mongodb://mongodb:mongodb@mongodb"
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-  needs:
-    - setup-test
+    GO_IMAGE: golang:1.16
+  script:
+    - go get gotest.tools/gotestsum
+    - go get github.com/boumenot/gocover-cobertura
+
+    # test report
+    - gotestsum --junitfile report.xml --format testname
+
+    # coverage
+    - go test -coverprofile=coverage.txt -covermode count ./...
+    - gocover-cobertura < coverage.txt > coverage.xml
+
+    # upload to codecov
+    - curl -s https://codecov.io/bash | bash - || true
+
+    # display from coverage.txt
+    - go tool cover -func=coverage.txt
+  coverage: '/total:.*\d+.\d+%/'
   artifacts:
     when: always
     reports:
       junit: report.xml
+      cobertura: coverage.xml
 
 build-container-okteto:
   stage: build-container
+  extends:
+    - .master-and-mr-rules
   image: docker:19
   services:
     - docker:19-dind
   script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build -t $DOCKER_IMAGE_TAG:$TAG -f ci.Dockerfile .
+    - docker build -t $DOCKER_IMAGE_TAG:$TAG -f tools/ci.Dockerfile .
     - docker push $DOCKER_IMAGE_TAG:$TAG
     - docker logout $CI_REGISTRY
-  dependencies:
+  needs:
     - compile
-  rules:
-    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 review:
   stage: review
+  needs:
+    - build-container-okteto
   image: okteto/okteto:1.13.4
   variables:
     APP: $OKTETO_PREVIEW_NS
@@ -122,8 +128,8 @@ review:
     name: "mr-${CI_MERGE_REQUEST_IID}-${CI_PROJECT_ROOT_NAMESPACE}"
     url: "https://cjtim-backend-go-mr-$CI_MERGE_REQUEST_IID-$CI_PROJECT_ROOT_NAMESPACE.cloud.okteto.net"
     on_stop: stop-review
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  only:
+    - merge_requests
 
 stop-review:
   stage: review
@@ -151,5 +157,5 @@ okteto:
     - okteto namespace
     - sed -e "s/TAG/$TAG/" k8s/deployment.yaml | kubectl apply -f -
     - kubectl apply -f k8s/service.yaml
-  rules:
-    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+  only:
+    - $CI_DEFAULT_BRANCH

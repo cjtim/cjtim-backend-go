@@ -9,7 +9,8 @@ import (
 )
 
 var (
-	Config *ConfigType
+	origConfig *ConfigType
+	Config     *ConfigType
 )
 
 type ConfigType struct {
@@ -30,6 +31,7 @@ type ConfigType struct {
 	LineAPIReply            string `envDefault:"https://api.line.me/v2/bot/message/reply"`
 	AirVisualAPINearestCity string `envDefault:"http://api.airvisual.com/v2/nearest_city"`
 	AirVisualAPICity        string `envDefault:"http://api.airvisual.com/v2/city"`
+	BinanceAccountAPI       string `envDefault:"https://api.binance.com/api/v3/account"`
 	LogFilePath             string `env:"LOG_PATH" envDefault:"/var/log/cjtim-backend-go.log"`
 }
 
@@ -47,5 +49,10 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	origConfig = &cfg
 	Config = &cfg
+}
+
+func RestoreConfigMock() {
+	Config = origConfig
 }

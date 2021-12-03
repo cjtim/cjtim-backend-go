@@ -19,9 +19,7 @@ import (
 func Get(c *fiber.Ctx) error {
 	data := repository.BinanceScheama{}
 	user := c.Locals("user").(*linebot.UserProfileResponse)
-	collection := repository.GetCollection(repository.Binance)
-	result := collection.FindOne(context.TODO(), bson.M{"lineUid": user.UserID})
-	err := result.Decode(&data)
+	err := repository.BinanceRepo.FindOne(&data, bson.M{"lineUid": user.UserID})
 	if err == mongo.ErrNoDocuments {
 		data = repository.BinanceScheama{
 			LineUID:          user.UserID,
@@ -33,11 +31,9 @@ func Get(c *fiber.Ctx) error {
 			},
 			LineNotifyTime: 5,
 		}
-		collection.InsertOne(context.TODO(), data)
-		result := collection.FindOne(context.TODO(), bson.M{"lineUid": user.UserID})
-		err := result.Decode(&data)
+		_, err := repository.BinanceRepo.InsertOne(context.TODO(), &data)
 		if err != nil {
-			return nil
+			return err
 		}
 		return c.JSON(data)
 	}
@@ -50,11 +46,9 @@ func Get(c *fiber.Ctx) error {
 func GetWallet(c *fiber.Ctx) error {
 	user := c.Locals("user").(*linebot.UserProfileResponse)
 	userBinance := repository.BinanceScheama{}
-	collection := repository.GetCollection(repository.Binance)
-	data := collection.FindOne(context.TODO(), bson.M{"lineUid": user.UserID})
-	err := data.Decode(&userBinance)
+	err := repository.BinanceRepo.FindOne(&userBinance, bson.M{"lineUid": user.UserID})
 	if err != nil {
-		return nil
+		return err
 	}
 
 	hasBinanceAPIKey := userBinance.BinanceApiKey != "" && userBinance.BinanceSecretKey != ""
@@ -65,7 +59,7 @@ func GetWallet(c *fiber.Ctx) error {
 		}
 		return c.JSON(binanceAccount["balances"])
 	}
-	return c.JSON([]interface{}{})
+	return c.SendStatus(http.StatusCreated)
 }
 
 func UpdatePrice(c *fiber.Ctx) error {
@@ -75,27 +69,22 @@ func UpdatePrice(c *fiber.Ctx) error {
 		return err
 	}
 	user := c.Locals("user").(*linebot.UserProfileResponse)
-	collection := repository.GetCollection(repository.Binance)
-	collection.FindOneAndReplace(context.TODO(), bson.M{"lineUid": user.UserID}, data)
+	repository.BinanceRepo.FindOneAndReplace(context.TODO(), bson.M{"lineUid": user.UserID}, &data)
 	return c.SendStatus(200)
 }
 
 func Cronjob(c *fiber.Ctx) error {
 	headers := utils.HeadersToMapStr(c)
-	if headers["Authorization"] != config.Config.SecretPassphrase {
+	_, found := headers["Authorization"]
+	if !found || headers["Authorization"] != config.Config.SecretPassphrase {
 		return c.SendStatus(fiber.StatusForbidden)
 	}
-	collection := repository.GetCollection(repository.Binance)
-	data := &[]repository.BinanceScheama{}
-	cur, err := collection.Find(context.TODO(), bson.M{})
+	data := []repository.BinanceScheama{}
+	err := repository.BinanceRepo.Find(&data, nil)
 	if err != nil {
 		return err
 	}
-	err = cur.All(context.TODO(), data)
-	if err != nil {
-		return err
-	}
-	for _, user := range *data {
+	for _, user := range data {
 		needNotify := false
 		userTime := user.LineNotifyTime % 60
 		currentMinute := time.Now().Minute()
@@ -115,7 +104,7 @@ func Cronjob(c *fiber.Ctx) error {
 				Body: user,
 			})
 			if err != nil || resp.StatusCode != http.StatusOK {
-				zap.L().Error("Trigger binance line notify", zap.String("lineuid", user.LineUID))
+				zap.L().Error("Error trigger binance line notify", zap.String("lineuid", user.LineUID))
 			}
 		}
 	}
