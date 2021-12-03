@@ -28,7 +28,7 @@ variables:
     key: ${CI_COMMIT_REF_NAME}
     when: on_success
     paths:
-      - $GOPATH/pkg/mod
+      - $GOPATH
       - $CI_PROJECT_DIR/vendor
   before_script:
     - mkdir -p $GOPATH/src/$(dirname $REPO_NAME)
@@ -54,20 +54,25 @@ test:
   stage: test
   extends: .go
   script:
-    - apk add --no-cache gcc musl-dev
+    - apk add --no-cache gcc musl-dev curl
     # test report
     - go get gotest.tools/gotestsum
     - gotestsum --junitfile report.xml --format testname
+
     # coverage
     - go get github.com/boumenot/gocover-cobertura
-    - go test -coverprofile=coverage.txt -covermode count ./...
+    - |
+      go test -coverprofile=coverage.txt -covermode count ./... > GO_TEST
+      cat GO_TEST
+
     # upload to codecov
     - curl -s https://codecov.io/bash | sh - || true
     - gocover-cobertura < coverage.txt > coverage.xml
+    - cat GO_TEST | grep -m 1 -o "coverage:.*"
   only:
     - merge_requests
   needs: []
-  coverage: '/github.com\/cjtim\/cjtim-backend-go\t.*\tcoverage: \d+.\d+% of statements/'
+  coverage: '/coverage: \d+.\d+% of statements/'
   artifacts:
     when: always
     reports:
