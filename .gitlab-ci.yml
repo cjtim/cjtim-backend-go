@@ -34,10 +34,10 @@ variables:
       - $CACHE_PATH
       - $CI_PROJECT_DIR/vendor
   before_script:
-    - time (mkdir -p $CACHE_PATH && mv -f $CACHE_PATH $GOPATH || true)
+    - time "mkdir -p $CACHE_PATH && mv -f $CACHE_PATH $GOPATH || true"
     - go mod download
   after_script:
-    - time (mv -f $GOPATH $CACHE_PATH || true)
+    - time "mv -f $GOPATH $CACHE_PATH || true"
 
 .master-and-mr-rules:
   only:
