@@ -4,6 +4,7 @@ stages:
   - build-container
   - review
   - deploy
+  - release
 
 variables:
   DOCKER_HOST: tcp://docker:2375/
@@ -161,3 +162,18 @@ okteto:
   only:
     refs:
       - $CI_DEFAULT_BRANCH
+
+release:
+  stage: release
+  image:
+    name: goreleaser/goreleaser
+    entrypoint: [""]
+  only:
+    - tags
+  variables:
+    # Disable shallow cloning so that goreleaser can diff between tags to
+    # generate a changelog.
+    GIT_DEPTH: 0
+  script:
+    - export GITLAB_TOKEN=$CI_JOB_TOKEN
+    - goreleaser release --rm-dist

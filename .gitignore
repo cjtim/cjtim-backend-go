@@ -3,3 +3,4 @@
 **/serviceAcc.json
 **/configmap.*
 **/log
+dist/
