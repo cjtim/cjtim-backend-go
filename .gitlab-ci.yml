@@ -37,8 +37,9 @@ variables:
 
 .master-and-mr-rules:
   only:
-    - $CI_DEFAULT_BRANCH
-    - merge_requests
+    refs:
+      - $CI_DEFAULT_BRANCH
+      - merge_requests
 
 compile:
   stage: compile
@@ -158,4 +159,5 @@ okteto:
     - sed -e "s/TAG/$TAG/" k8s/deployment.yaml | kubectl apply -f -
     - kubectl apply -f k8s/service.yaml
   only:
-    - $CI_DEFAULT_BRANCH
+    refs:
+      - $CI_DEFAULT_BRANCH
