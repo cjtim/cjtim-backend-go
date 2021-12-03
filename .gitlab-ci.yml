@@ -71,10 +71,11 @@ test:
 
     # upload to codecov
     - curl -s https://codecov.io/bash | bash - || true
-    - cat GO_TEST | grep -m 1 -o "coverage:.*"
+    # display from coverage.txt
+    - go tool cover -func=coverage.txt
   only:
     - merge_requests
-  coverage: '/coverage: \d+.\d+% of statements/'
+  coverage: '/total:.*\d+.\d+%/'
   artifacts:
     when: always
     reports:
