@@ -13,13 +13,14 @@ import (
 
 // Add - Upload file and save to DB
 func Add(fullFileName string, byteData []byte, lineUID string) (*repository.FileScheama, error) {
-	Gclient, err := gstorage.GetClient()
-	defer Gclient.Client.Close()
+	client, err := gstorage.GetClient()
 	if err != nil {
 		return nil, err
 	}
+	defer client.Close()
+
 	objPath := ("users/" + lineUID + "/files/" + fullFileName)
-	url, err := Gclient.Upload(objPath, byteData)
+	url, err := client.Upload(objPath, byteData)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +58,7 @@ func AddFromLine(messageID string, lineUID string) (*repository.FileScheama, err
 
 // Delete - Remove file from storage and rebrandly
 func Delete(fullFileName string, lineUID string) error {
-	file := &repository.FileScheama{}
+	file := repository.FileScheama{}
 	err := repository.FileRepo.FindOne(&file, bson.M{"lineUid": lineUID, "fileName": fullFileName})
 	if err != nil {
 		return err
@@ -67,7 +68,8 @@ func Delete(fullFileName string, lineUID string) error {
 	if err != nil {
 		return err
 	}
-	defer gClient.Client.Close()
+	defer gClient.Close()
+
 	err = gClient.Delete("users/" + lineUID + "/files/" + fullFileName)
 	if err != nil {
 		return err
