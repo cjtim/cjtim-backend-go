@@ -26,7 +26,7 @@ variables:
 
     GO_IMAGE: golang:1.16-alpine3.14
     CACHE_PATH: .cache
-    GOPATH: $CI_PROJECT_DIR/$CACHE_PATH
+    GOPATH: /go
   cache:
     key: ${CI_COMMIT_REF_NAME}
     when: on_success
@@ -34,8 +34,10 @@ variables:
       - $CACHE_PATH
       - $CI_PROJECT_DIR/vendor
   before_script:
-    - mkdir -p $CACHE_PATH
+    - mkdir -p $CACHE_PATH && cp -R $CACHE_PATH $GOPATH || true
     - go mod download
+  after_script:
+    - cp -R $GOPATH $CACHE_PATH || true
 
 .master-and-mr-rules:
   only:
