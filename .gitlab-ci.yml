@@ -25,20 +25,15 @@ variables:
     CGO_ENABLED: 0
 
     GO_IMAGE: golang:1.16-alpine3.14
-    CACHE_PATH: .cache
     GOPATH: /go
-  cache:
-    key: ${CI_COMMIT_REF_NAME}
-    when: on_success
-    paths:
-      - $CACHE_PATH
-      - $CI_PROJECT_DIR/vendor
+  # cache:
+  #   key: ${CI_COMMIT_REF_NAME}
+  #   when: on_success
+  #   paths:
+  #     - $GOPATH
+  #     - $CI_PROJECT_DIR/vendor
   before_script:
-    - mkdir -p $CACHE_PATH $GOPATH
-    - mv -f $CACHE_PATH $GOPATH
     - go mod download
-  after_script:
-    - mv -f $GOPATH $CACHE_PATH
 
 .master-and-mr-rules:
   only:
