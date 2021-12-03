@@ -55,14 +55,21 @@ func MongoClient() (*mongo.Client, error) {
 
 	Client = client
 	DB = client.Database(config.Config.MongoDB)
-	BinanceRepo = GetCollection(Binance)
-	FileRepo = GetCollection(Files)
-	UrlRepo = GetCollection(Urls)
-	UserRepo = GetCollection(Users)
+	BinanceRepo = getCollection(Binance)
+	FileRepo = getCollection(Files)
+	UrlRepo = getCollection(Urls)
+	UserRepo = getCollection(Users)
 	return client, nil
 }
 
-func NewRepository(col *mongo.Collection) *Repository {
+func RestoreRepoMock() {
+	BinanceRepo = &Repository{}
+	FileRepo = &Repository{}
+	UrlRepo = &Repository{}
+	UserRepo = &Repository{}
+}
+
+func newRepository(col *mongo.Collection) *Repository {
 	return &Repository{
 		FindOne: func(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {
 			result := col.FindOne(context.TODO(), filter, opts...)
@@ -104,7 +111,7 @@ func NewRepository(col *mongo.Collection) *Repository {
 	}
 }
 
-func GetCollection(col Collection) *Repository {
+func getCollection(col Collection) *Repository {
 	colInstance := DB.Collection(string(col))
-	return NewRepository(colInstance)
+	return newRepository(colInstance)
 }

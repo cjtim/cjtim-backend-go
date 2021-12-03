@@ -33,7 +33,7 @@ func Get(c *fiber.Ctx) error {
 		}
 		_, err := repository.BinanceRepo.InsertOne(context.TODO(), &data)
 		if err != nil {
-			return nil
+			return err
 		}
 		return c.JSON(data)
 	}
@@ -48,7 +48,7 @@ func GetWallet(c *fiber.Ctx) error {
 	userBinance := repository.BinanceScheama{}
 	err := repository.BinanceRepo.FindOne(&userBinance, bson.M{"lineUid": user.UserID})
 	if err != nil {
-		return nil
+		return err
 	}
 
 	hasBinanceAPIKey := userBinance.BinanceApiKey != "" && userBinance.BinanceSecretKey != ""
@@ -59,7 +59,7 @@ func GetWallet(c *fiber.Ctx) error {
 		}
 		return c.JSON(binanceAccount["balances"])
 	}
-	return c.JSON([]interface{}{})
+	return c.SendStatus(http.StatusCreated)
 }
 
 func UpdatePrice(c *fiber.Ctx) error {
@@ -75,15 +75,16 @@ func UpdatePrice(c *fiber.Ctx) error {
 
 func Cronjob(c *fiber.Ctx) error {
 	headers := utils.HeadersToMapStr(c)
-	if headers["Authorization"] != config.Config.SecretPassphrase {
+	_, found := headers["Authorization"]
+	if !found || headers["Authorization"] != config.Config.SecretPassphrase {
 		return c.SendStatus(fiber.StatusForbidden)
 	}
-	data := &[]repository.BinanceScheama{}
+	data := []repository.BinanceScheama{}
 	err := repository.BinanceRepo.Find(&data, nil)
 	if err != nil {
 		return err
 	}
-	for _, user := range *data {
+	for _, user := range data {
 		needNotify := false
 		userTime := user.LineNotifyTime % 60
 		currentMinute := time.Now().Minute()

@@ -93,7 +93,7 @@ build-container-okteto:
     - docker:19-dind
   script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build -t $DOCKER_IMAGE_TAG:$TAG -f ci.Dockerfile .
+    - docker build -t $DOCKER_IMAGE_TAG:$TAG -f tools/ci.Dockerfile .
     - docker push $DOCKER_IMAGE_TAG:$TAG
     - docker logout $CI_REGISTRY
   needs:
