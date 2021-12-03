@@ -74,6 +74,7 @@ test:
     # display from coverage.txt
     - go tool cover -func=coverage.txt
   only:
+    - $CI_DEFAULT_BRANCH
     - merge_requests
   coverage: '/total:.*\d+.\d+%/'
   artifacts:
