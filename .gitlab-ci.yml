@@ -24,8 +24,8 @@ variables:
     CGO_ENABLED: 0
     GOPATH: $CI_PROJECT_DIR/.cache
   cache:
-    key: $CI_JOB_NAME
-    when: always
+    key: ${CI_COMMIT_REF_NAME}
+    when: on_success
     paths:
       - $GOPATH
   before_script:
@@ -42,13 +42,13 @@ compile:
   artifacts:
     paths:
       - $OUTPUT_FILE
-  rules: &ci_rule
-    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  only:
+    - $CI_DEFAULT_BRANCH
+    - merge_requests
 
 test:
   stage: test
-  image: golang:1.16-alpine3.14
+  extends: .go
   script:
     - apk add --no-cache gcc musl-dev
     # test report
@@ -60,9 +60,10 @@ test:
     # upload to codecov
     - curl -s https://codecov.io/bash | sh - || true
     - gocover-cobertura < coverage.txt > coverage.xml
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  only:
+    - merge_requests
   needs: []
+  coverage: '/coverage: \d+\.\d+/'
   artifacts:
     when: always
     reports:
@@ -81,9 +82,9 @@ build-container-okteto:
     - docker logout $CI_REGISTRY
   dependencies:
     - compile
-  rules:
-    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  only:
+    - $CI_DEFAULT_BRANCH
+    - merge_requests
 
 review:
   stage: review
@@ -112,8 +113,8 @@ review:
     name: "mr-${CI_MERGE_REQUEST_IID}-${CI_PROJECT_ROOT_NAMESPACE}"
     url: "https://cjtim-backend-go-mr-$CI_MERGE_REQUEST_IID-$CI_PROJECT_ROOT_NAMESPACE.cloud.okteto.net"
     on_stop: stop-review
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  only:
+    - merge_requests
 
 stop-review:
   stage: review
@@ -141,5 +142,5 @@ okteto:
     - okteto namespace
     - sed -e "s/TAG/$TAG/" k8s/deployment.yaml | kubectl apply -f -
     - kubectl apply -f k8s/service.yaml
-  rules:
-    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+  only:
+    - $CI_DEFAULT_BRANCH
