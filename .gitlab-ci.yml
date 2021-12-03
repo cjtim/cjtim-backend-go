@@ -22,14 +22,18 @@ variables:
     GOOS: linux
     GOARCH: amd64
     CGO_ENABLED: 0
-    GOPATH: $CI_PROJECT_DIR/.cache
+    GOPATH: /go
+    REPO_NAME: $CI_SERVER_HOST/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME
   cache:
     key: ${CI_COMMIT_REF_NAME}
     when: on_success
     paths:
-      - $GOPATH
+      - $GOPATH/pkg/mod
+      - $CI_PROJECT_DIR/vendor
   before_script:
-    - mkdir -p .cache
+    - mkdir -p $GOPATH/src/$(dirname $REPO_NAME)
+    - ln -svf $CI_PROJECT_DIR $GOPATH/src/$REPO_NAME
+    - cd $GOPATH/src/$REPO_NAME
     - go mod download
 
 compile:
