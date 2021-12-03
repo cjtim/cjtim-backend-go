@@ -37,10 +37,9 @@ variables:
     - go mod download
 
 .master-and-mr-rules:
-  only:
-    refs:
-      - $CI_DEFAULT_BRANCH
-      - merge_requests
+  rules:
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+    - if: "$CI_PIPELINE_SOURCE == 'merge_request_event'"
 
 compile:
   stage: compile
@@ -159,9 +158,9 @@ okteto:
     - okteto namespace
     - sed -e "s/TAG/$TAG/" k8s/deployment.yaml | kubectl apply -f -
     - kubectl apply -f k8s/service.yaml
-  only:
-    refs:
-      - $CI_DEFAULT_BRANCH
+  rules:
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+
 
 release:
   stage: release
