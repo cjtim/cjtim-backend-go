@@ -17,8 +17,9 @@ variables:
   TAG: $CI_COMMIT_SHORT_SHA
 
 .go:
-  image: golang:1.16-alpine3.14
+  image: $GO_IMAGE
   variables:
+    GO_IMAGE: golang:1.16-alpine3.14
     GOOS: linux
     GOARCH: amd64
     CGO_ENABLED: 0
@@ -52,26 +53,27 @@ compile:
 
 test:
   stage: test
+  needs: []
   extends: .go
+  variables:
+    GO_IMAGE: golang:1.16
   script:
-    - apk add --no-cache gcc musl-dev curl
     # test report
     - go get gotest.tools/gotestsum
     - gotestsum --junitfile report.xml --format testname
 
     # coverage
-    - go get github.com/boumenot/gocover-cobertura
     - |
       go test -coverprofile=coverage.txt -covermode count ./... > GO_TEST
       cat GO_TEST
+    - go get github.com/boumenot/gocover-cobertura
+    - gocover-cobertura < coverage.txt > coverage.xml
 
     # upload to codecov
-    - curl -s https://codecov.io/bash | sh - || true
-    - gocover-cobertura < coverage.txt > coverage.xml
+    - curl -s https://codecov.io/bash | bash - || true
     - cat GO_TEST | grep -m 1 -o "coverage:.*"
   only:
     - merge_requests
-  needs: []
   coverage: '/coverage: \d+.\d+% of statements/'
   artifacts:
     when: always
