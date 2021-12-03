@@ -37,9 +37,16 @@ variables:
     - cd $GOPATH/src/$REPO_NAME
     - go mod download
 
+.master-and-mr-rules:
+  only:
+    - $CI_DEFAULT_BRANCH
+    - merge_requests
+
 compile:
   stage: compile
-  extends: .go
+  extends:
+    - .go
+    - .master-and-mr-rules
   variables:
     OUTPUT_FILE: main
   script:
@@ -47,35 +54,31 @@ compile:
   artifacts:
     paths:
       - $OUTPUT_FILE
-  only:
-    - $CI_DEFAULT_BRANCH
-    - merge_requests
 
 test:
   stage: test
   needs: []
-  extends: .go
+  extends:
+    - .go
+    - .master-and-mr-rules
   variables:
     GO_IMAGE: golang:1.16
   script:
-    # test report
     - go get gotest.tools/gotestsum
+    - go get github.com/boumenot/gocover-cobertura
+
+    # test report
     - gotestsum --junitfile report.xml --format testname
 
     # coverage
-    - |
-      go test -coverprofile=coverage.txt -covermode count ./... > GO_TEST
-      cat GO_TEST
-    - go get github.com/boumenot/gocover-cobertura
+    - go test -coverprofile=coverage.txt -covermode count ./...
     - gocover-cobertura < coverage.txt > coverage.xml
 
     # upload to codecov
     - curl -s https://codecov.io/bash | bash - || true
+
     # display from coverage.txt
     - go tool cover -func=coverage.txt
-  only:
-    - $CI_DEFAULT_BRANCH
-    - merge_requests
   coverage: '/total:.*\d+.\d+%/'
   artifacts:
     when: always
@@ -85,6 +88,8 @@ test:
 
 build-container-okteto:
   stage: build-container
+  extends:
+    - .master-and-mr-rules
   image: docker:19
   services:
     - docker:19-dind
@@ -95,9 +100,6 @@ build-container-okteto:
     - docker logout $CI_REGISTRY
   dependencies:
     - compile
-  only:
-    - $CI_DEFAULT_BRANCH
-    - merge_requests
 
 review:
   stage: review
