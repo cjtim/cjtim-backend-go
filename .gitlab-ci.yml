@@ -96,11 +96,13 @@ build-container-okteto:
     - docker build -t $DOCKER_IMAGE_TAG:$TAG -f ci.Dockerfile .
     - docker push $DOCKER_IMAGE_TAG:$TAG
     - docker logout $CI_REGISTRY
-  dependencies:
+  needs:
     - compile
 
 review:
   stage: review
+  needs:
+    - build-container-okteto
   image: okteto/okteto:1.13.4
   variables:
     APP: $OKTETO_PREVIEW_NS
