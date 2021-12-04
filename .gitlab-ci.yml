@@ -164,10 +164,9 @@ okteto:
 
 release-tag:
   stage: release
-  needs:
-    - test
+  needs: []
   only:
-    - $CI_DEFAULT_BRANCH
+    - master
   image: 
     name: ghcr.io/go-semantic-release/semantic-release:2.17.0
     entrypoint: [""]
