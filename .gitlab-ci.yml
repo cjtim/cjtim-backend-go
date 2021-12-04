@@ -163,14 +163,16 @@ okteto:
     - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
 
 release-tag:
-  image: ghcr.io/go-semantic-release/semantic-release:2.17.0
   stage: release
   needs:
     - test
-  script:
-    - release
   only:
-    - master
+    - $CI_DEFAULT_BRANCH
+  image: 
+    name: ghcr.io/go-semantic-release/semantic-release:2.17.0
+    entrypoint: [""]
+  script:
+    - /usr/local/bin/semantic-release
 
 release:
   stage: release
