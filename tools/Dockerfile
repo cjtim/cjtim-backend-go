@@ -1,4 +1,4 @@
-FROM golang:1.15 as builder
+FROM golang:1.16 as builder
 WORKDIR $GOPATH/src/github.com/cjtim/cjtim-backend-go
 COPY . .
 
@@ -10,7 +10,7 @@ RUN go get -d -v
 # RUN go mod verify
 # Build the binary.
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -o main
+    go build -o main cmd/cjtim-backend-go/main.go
 
 FROM alpine:latest  
 RUN apk update && \
