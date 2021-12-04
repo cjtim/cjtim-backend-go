@@ -162,6 +162,17 @@ okteto:
   rules:
     - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
 
+release-tag:
+  image: registry.gitlab.com/go-semantic-release/semantic-release:latest
+  stage: release
+  needs:
+    - test
+  script:
+    - release
+  when: manual
+  only:
+    - master
+
 release:
   stage: release
   needs: []

@@ -4,3 +4,6 @@
 **/configmap.*
 **/log
 dist/
+**/coverage.*
+semantic-release
+.semrel
