@@ -30,36 +30,52 @@ type Repository struct {
 	DeleteOne         func(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (int64, error)
 }
 
+type RepoImpl struct {
+	Connect    func() error
+	Disconnect func() error
+}
+
 var (
-	Client      = &mongo.Client{}
+	mongoClient = &mongo.Client{}
 	DB          = &mongo.Database{}
+
+	Client      = &RepoImpl{}
 	BinanceRepo = &Repository{}
 	FileRepo    = &Repository{}
 	UrlRepo     = &Repository{}
 	UserRepo    = &Repository{}
 )
 
-func MongoClient() (*mongo.Client, error) {
-	client, err := mongo.NewClient(options.Client().ApplyURI(configs.Config.MongoURI))
-	if err != nil {
-		return nil, err
-	}
-	err = client.Connect(context.TODO())
-	if err != nil {
-		return nil, err
-	}
-	if err := client.Ping(context.TODO(), nil); err != nil {
-		return nil, err
-	}
-	zap.L().Info("DB connected!")
+func NewClient() *RepoImpl {
+	return &RepoImpl{
+		Connect: func() error {
+			c, err := mongo.NewClient(options.Client().ApplyURI(configs.Config.MongoURI))
+			if err != nil {
+				return err
+			}
 
-	Client = client
-	DB = client.Database(configs.Config.MongoDB)
-	BinanceRepo = getCollection(Binance)
-	FileRepo = getCollection(Files)
-	UrlRepo = getCollection(Urls)
-	UserRepo = getCollection(Users)
-	return client, nil
+			if err := c.Connect(context.TODO()); err != nil {
+				return err
+			}
+
+			if err := c.Ping(context.TODO(), nil); err != nil {
+				return err
+			}
+			zap.L().Info("DB connected!")
+
+			mongoClient = c
+			DB = c.Database(configs.Config.MongoDB)
+			BinanceRepo = getCollection(Binance)
+			FileRepo = getCollection(Files)
+			UrlRepo = getCollection(Urls)
+			UserRepo = getCollection(Users)
+			return nil
+		},
+		Disconnect: func() error {
+			zap.L().Info("DB disconnecting...")
+			return mongoClient.Disconnect(context.TODO())
+		},
+	}
 }
 
 func RestoreRepoMock() {

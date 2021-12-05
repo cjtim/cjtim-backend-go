@@ -15,30 +15,32 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	app *fiber.App
-)
-
 func main() {
+	os.Exit(realMain())
+}
+
+func realMain() int {
 	logger := middlewares.InitZap()
 	defer logger.Sync()
 	zap.ReplaceGlobals(logger)
 
-	setupCloseHandler()
+	app := startServer()
+	setupCloseHandler(app)
 
-	_, err := repository.MongoClient()
+	repository.Client = repository.NewClient()
+	err := repository.Client.Connect()
 	if err != nil {
 		zap.L().Fatal("Database start error", zap.Error(err))
 	}
 
-	app = startServer()
 	listen := fmt.Sprintf(":%d", configs.Config.Port)
 	if err := app.Listen(listen); err != nil {
 		repository.DB.Client().Disconnect(context.TODO())
 		zap.L().Info("MongoDB disconected!")
 		zap.L().Fatal("fiber start error", zap.Error(err))
+		return 1
 	}
-	os.Exit(0)
+	return 0
 }
 
 func startServer() *fiber.App {
@@ -53,15 +55,14 @@ func startServer() *fiber.App {
 }
 
 // setupCloseHandler - What to do when got ctrl+c SIGTERM
-func setupCloseHandler() {
+func setupCloseHandler(app *fiber.App) {
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	signal.Notify(c, os.Interrupt, syscall.SIGINT)
 	go func() {
 		<-c
 		zap.L().Info("Got SIGTERM, terminating program...")
-		repository.Client.Disconnect(context.TODO())
-		zap.L().Info("MongoDB disconected!")
+		repository.Client.Disconnect()
 		app.Server().Shutdown()
 	}()
 }

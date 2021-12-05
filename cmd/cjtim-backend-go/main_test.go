@@ -8,21 +8,19 @@ import (
 	"github.com/gofiber/fiber/v2/utils"
 )
 
-func init() {
-	app = startServer()
-}
-
 func Test_Route_Home(t *testing.T) {
+	app := startServer()
 	resp, err := app.Test(httptest.NewRequest("GET", "/", nil))
 	utils.AssertEqual(t, nil, err, "is error?")
 	utils.AssertEqual(t, 200, resp.StatusCode, "Status code")
 	body, err := ioutil.ReadAll(resp.Body)
 	utils.AssertEqual(t, "{\"msg\":\"Hello, world\"}", string(body), "hello world")
 	utils.AssertEqual(t, nil, err)
-
 }
 
 func Test_Route_Ping(t *testing.T) {
+	app := startServer()
+
 	resp, err := app.Test(httptest.NewRequest("GET", "/health", nil))
 	utils.AssertEqual(t, nil, err, "is error?")
 	utils.AssertEqual(t, 200, resp.StatusCode, "Status code")
@@ -32,6 +30,8 @@ func Test_Route_Ping(t *testing.T) {
 }
 
 func Test_Route_Me(t *testing.T) {
+	app := startServer()
+
 	resp, err := app.Test(httptest.NewRequest("GET", "/users/me", nil))
 	utils.AssertEqual(t, nil, err, "is error?")
 	utils.AssertEqual(t, 403, resp.StatusCode, "Status code: 403")
@@ -41,5 +41,11 @@ func Test_Route_Me(t *testing.T) {
 }
 
 func Test_Shutdown_Server(t *testing.T) {
+	app := startServer()
 	app.Server().Shutdown()
+}
+
+func Test_CloseHandler(t *testing.T) {
+	app := startServer()
+	setupCloseHandler(app)
 }

@@ -33,6 +33,7 @@ type ConfigType struct {
 	AirVisualAPICity        string `envDefault:"http://api.airvisual.com/v2/city"`
 	BinanceAccountAPI       string `envDefault:"https://api.binance.com/api/v3/account"`
 	LogFilePath             string `env:"LOG_PATH" envDefault:"/var/log/cjtim-backend-go.log"`
+	GCLOUD_CREDENTIAL       string `env:"GCLOUD_CREDENTIAL" envDefault:"./configs/serviceAcc.json"`
 }
 
 func init() {
