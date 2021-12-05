@@ -2,7 +2,6 @@ package urls
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/cjtim/cjtim-backend-go/internal/app/repository"
 	"github.com/cjtim/cjtim-backend-go/internal/pkg/rebrandly"
@@ -45,7 +44,6 @@ func List(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(urls)
 	return c.JSON(fiber.Map{
 		"urls": urls,
 	})

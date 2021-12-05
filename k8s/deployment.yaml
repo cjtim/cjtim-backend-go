@@ -115,6 +115,9 @@ spec:
           envFrom:
             - configMapRef:
                 name: cjtim-backend-go-configmap
+          env:
+            - name: GCLOUD_CREDENTIAL
+              value: /tmp/configmap/serviceAcc.json
           resources:
             limits:
               cpu: 400m
@@ -130,9 +133,14 @@ spec:
           volumeMounts:
             - name: varlog
               mountPath: /var/log
+            - name: gcp-cred
+              mountPath: /tmp/configmap
 
       volumes:
         - name: config-volume
           emptyDir: {}
         - name: varlog
           emptyDir: {}
+        - name: gcp-cred
+          configMap:
+              name: cjtim-backend-go-configmap
