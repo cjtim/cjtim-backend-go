@@ -6,7 +6,13 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2/utils"
+	"github.com/stretchr/testify/assert"
 )
+
+func Test_Main_Fail_DB(t *testing.T) {
+	a := realMain()
+	assert.Equal(t, 1, a)
+}
 
 func Test_Route_Home(t *testing.T) {
 	app := startServer()

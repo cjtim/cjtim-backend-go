@@ -45,11 +45,11 @@ func Webhook(c *fiber.Ctx) error {
 			return nil
 		case "file":
 			message := event[0].Message.(*linebot.FileMessage)
-			_, err = files.AddFromLine(message.ID, event[0].Source.UserID)
+			_, err = files.Client.AddFromLine(message.ID, event[0].Source.UserID)
 			return err
 		case "image":
 			message := event[0].Message.(*linebot.ImageMessage)
-			_, err = files.AddFromLine(message.ID, event[0].Source.UserID)
+			_, err = files.Client.AddFromLine(message.ID, event[0].Source.UserID)
 			return err
 		}
 	}

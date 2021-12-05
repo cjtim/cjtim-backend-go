@@ -11,8 +11,26 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+var Client Files = &FilesImpl{}
+
+type Files interface {
+	// Add - Upload file and save to DB
+	Add(fullFileName string, byteData []byte, lineUID string) (*repository.FileScheama, error)
+
+	// AddFromLine - Contents being upload via line chat will parse here
+	AddFromLine(messageID string, lineUID string) (*repository.FileScheama, error)
+
+	// Delete - Remove file from storage and rebrandly
+	Delete(fullFileName string, lineUID string) error
+}
+type FilesImpl struct{}
+
+func RestoreMocks() {
+	Client = &FilesImpl{}
+}
+
 // Add - Upload file and save to DB
-func Add(fullFileName string, byteData []byte, lineUID string) (*repository.FileScheama, error) {
+func (f *FilesImpl) Add(fullFileName string, byteData []byte, lineUID string) (*repository.FileScheama, error) {
 	client, err := gstorage.GetClient()
 	if err != nil {
 		return nil, err
@@ -41,7 +59,7 @@ func Add(fullFileName string, byteData []byte, lineUID string) (*repository.File
 }
 
 // AddFromLine - Contents being upload via line chat will parse here
-func AddFromLine(messageID string, lineUID string) (*repository.FileScheama, error) {
+func (f *FilesImpl) AddFromLine(messageID string, lineUID string) (*repository.FileScheama, error) {
 	fileByte, fileType, err := line.GetContent(messageID)
 	if err != nil {
 		return nil, err
@@ -53,11 +71,11 @@ func AddFromLine(messageID string, lineUID string) (*repository.FileScheama, err
 	if err != nil {
 		return nil, err
 	}
-	return Add(messageID+ext[0], fileByte, lineUID)
+	return f.Add(messageID+ext[0], fileByte, lineUID)
 }
 
 // Delete - Remove file from storage and rebrandly
-func Delete(fullFileName string, lineUID string) error {
+func (f *FilesImpl) Delete(fullFileName string, lineUID string) error {
 	file := repository.FileScheama{}
 	err := repository.FileRepo.FindOne(&file, bson.M{"lineUid": lineUID, "fileName": fullFileName})
 	if err != nil {

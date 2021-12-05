@@ -28,8 +28,12 @@ func Upload(c *fiber.Ctx) error {
 		return err
 	}
 	user := c.Locals("user").(*linebot.UserProfileResponse)
-	_, err = files.Add(file.Filename, bdata, user.UserID)
-	return err
+
+	json, err := files.Client.Add(file.Filename, bdata, user.UserID)
+	if err != nil {
+		return err
+	}
+	return c.JSON(json)
 }
 
 func List(c *fiber.Ctx) error {
@@ -53,7 +57,7 @@ func Delete(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	err = files.Delete(body.Filename, user.UserID)
+	err = files.Client.Delete(body.Filename, user.UserID)
 	if err != nil {
 		return err
 	}
