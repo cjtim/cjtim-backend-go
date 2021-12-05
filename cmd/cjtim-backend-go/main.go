@@ -30,14 +30,15 @@ func realMain() int {
 	repository.Client = repository.NewClient()
 	err := repository.Client.Connect()
 	if err != nil {
-		zap.L().Fatal("Database start error", zap.Error(err))
+		zap.L().Error("Database start error", zap.Error(err))
+		return 1
 	}
 
 	listen := fmt.Sprintf(":%d", configs.Config.Port)
 	if err := app.Listen(listen); err != nil {
 		repository.DB.Client().Disconnect(context.TODO())
 		zap.L().Info("MongoDB disconected!")
-		zap.L().Fatal("fiber start error", zap.Error(err))
+		zap.L().Error("fiber start error", zap.Error(err))
 		return 1
 	}
 	return 0
