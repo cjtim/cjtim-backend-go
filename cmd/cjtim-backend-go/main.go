@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -27,8 +26,9 @@ func realMain() int {
 	app := startServer()
 	setupCloseHandler(app)
 
-	repository.Client = repository.NewClient()
-	err := repository.Client.Connect()
+	client := &repository.ClientImpl{}
+	repository.Client = client
+	err := client.Connect()
 	if err != nil {
 		zap.L().Error("Database start error", zap.Error(err))
 		return 1
@@ -36,8 +36,7 @@ func realMain() int {
 
 	listen := fmt.Sprintf(":%d", configs.Config.Port)
 	if err := app.Listen(listen); err != nil {
-		repository.DB.Client().Disconnect(context.TODO())
-		zap.L().Info("MongoDB disconected!")
+		repository.Client.Disconnect()
 		zap.L().Error("fiber start error", zap.Error(err))
 		return 1
 	}

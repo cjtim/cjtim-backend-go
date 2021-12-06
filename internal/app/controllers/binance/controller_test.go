@@ -42,7 +42,9 @@ func initialBinanceMock() *fiber.App {
 func Test_Get_FoundUser(t *testing.T) {
 	app := initialBinanceMock()
 
-	repository.BinanceRepo.FindOne = func(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {
+	mock := repository.Mock_Repository{}
+
+	mock.M_FindOne = func(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {
 		b, _ := json.Marshal(repository.BinanceScheama{
 			LineUID: "aaaaaaaaaabbbbbbbbb",
 			Prices: map[string]interface{}{
@@ -53,9 +55,10 @@ func Test_Get_FoundUser(t *testing.T) {
 		json.Unmarshal(b, data)
 		return nil
 	}
-	repository.BinanceRepo.InsertOne = func(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (primitive.ObjectID, error) {
+	mock.M_InsertOne = func(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (primitive.ObjectID, error) {
 		return primitive.NewObjectID(), nil
 	}
+	repository.BinanceRepo = &mock
 	defer repository.RestoreRepoMock()
 
 	req := httptest.NewRequest(http.MethodGet, "/binance/get", nil)
@@ -95,8 +98,9 @@ func Test_Get_NoUser(t *testing.T) {
 
 	app := initialBinanceMock()
 
+	mock := repository.Mock_Repository{}
 	findOneCount := 0
-	repository.BinanceRepo.FindOne = func(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {
+	mock.M_FindOne = func(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {
 		if findOneCount == 0 {
 			findOneCount++
 			return mongo.ErrNoDocuments
@@ -104,9 +108,10 @@ func Test_Get_NoUser(t *testing.T) {
 		b, _ := json.Marshal(expect)
 		return json.Unmarshal(b, data)
 	}
-	repository.BinanceRepo.InsertOne = func(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (primitive.ObjectID, error) {
+	mock.M_InsertOne = func(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (primitive.ObjectID, error) {
 		return primitive.NewObjectID(), nil
 	}
+	repository.BinanceRepo = &mock
 	defer repository.RestoreRepoMock()
 	req := httptest.NewRequest(http.MethodGet, "/binance/get", nil)
 
@@ -130,9 +135,11 @@ func Test_Get_NoUser(t *testing.T) {
 func Test_Get_FindOne_Fail(t *testing.T) {
 	app := initialBinanceMock()
 
-	repository.BinanceRepo.FindOne = func(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {
+	mock := repository.Mock_Repository{}
+	mock.M_FindOne = func(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {
 		return mongo.ErrClientDisconnected
 	}
+	repository.BinanceRepo = &mock
 	defer repository.RestoreRepoMock()
 
 	req := httptest.NewRequest(http.MethodGet, "/binance/get", nil)
@@ -146,12 +153,14 @@ func Test_Get_FindOne_Fail(t *testing.T) {
 func Test_Get_Insert_Fail(t *testing.T) {
 	app := initialBinanceMock()
 
-	repository.BinanceRepo.FindOne = func(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {
+	mock := repository.Mock_Repository{}
+	mock.M_FindOne = func(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {
 		return mongo.ErrNoDocuments
 	}
-	repository.BinanceRepo.InsertOne = func(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (primitive.ObjectID, error) {
+	mock.M_InsertOne = func(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (primitive.ObjectID, error) {
 		return primitive.NewObjectID(), mongo.ErrClientDisconnected
 	}
+	repository.BinanceRepo = &mock
 	defer repository.RestoreRepoMock()
 
 	req := httptest.NewRequest(http.MethodGet, "/binance/get", nil)
@@ -169,10 +178,12 @@ func Test_GetWallet_Pass(t *testing.T) {
 		BinanceApiKey:    "A",
 		BinanceSecretKey: "B",
 	}
-	repository.BinanceRepo.FindOne = func(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {
+	mock := repository.Mock_Repository{}
+	mock.M_FindOne = func(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {
 		b, _ := json.Marshal(&mockData)
 		return json.Unmarshal(b, data)
 	}
+	repository.BinanceRepo = &mock
 	defer repository.RestoreRepoMock()
 
 	origBinanceAPI := configs.Config.BinanceAccountAPI
@@ -203,10 +214,12 @@ func Test_GetWallet_BinanceAPI_Fail(t *testing.T) {
 		BinanceApiKey:    "A",
 		BinanceSecretKey: "B",
 	}
-	repository.BinanceRepo.FindOne = func(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {
+	mock := repository.Mock_Repository{}
+	mock.M_FindOne = func(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {
 		b, _ := json.Marshal(&mockData)
 		return json.Unmarshal(b, data)
 	}
+	repository.BinanceRepo = &mock
 	defer repository.RestoreRepoMock()
 
 	origBinanceAPI := configs.Config.BinanceAccountAPI
@@ -232,9 +245,11 @@ func Test_GetWallet_BinanceAPI_Fail(t *testing.T) {
 
 func Test_GetWallet_FindOne_Fail(t *testing.T) {
 	app := initialBinanceMock()
-	repository.BinanceRepo.FindOne = func(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {
+	mock := repository.Mock_Repository{}
+	mock.M_FindOne = func(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {
 		return mongo.ErrNoDocuments
 	}
+	repository.BinanceRepo = &mock
 	defer repository.RestoreRepoMock()
 
 	req := httptest.NewRequest(http.MethodGet, "/binance/wallet", nil)
@@ -251,10 +266,12 @@ func Test_GetWallet_NoAPIKey(t *testing.T) {
 		BinanceApiKey:    "",
 		BinanceSecretKey: "",
 	}
-	repository.BinanceRepo.FindOne = func(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {
+	mock := repository.Mock_Repository{}
+	mock.M_FindOne = func(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {
 		b, _ := json.Marshal(&mockData)
 		return json.Unmarshal(b, data)
 	}
+	repository.BinanceRepo = &mock
 	defer repository.RestoreRepoMock()
 
 	req := httptest.NewRequest(http.MethodGet, "/binance/wallet", nil)
@@ -277,9 +294,11 @@ func Test_UpdatePrice_Pass(t *testing.T) {
 		},
 		LineNotifyTime: 5,
 	}
-	repository.BinanceRepo.FindOneAndReplace = func(ctx context.Context, filter, replacement interface{}, opts ...*options.FindOneAndReplaceOptions) error {
+	mock := repository.Mock_Repository{}
+	mock.M_FindOneAndReplace = func(ctx context.Context, filter, replacement interface{}, opts ...*options.FindOneAndReplaceOptions) error {
 		return nil
 	}
+	repository.BinanceRepo = &mock
 	defer repository.RestoreRepoMock()
 
 	app := initialBinanceMock()
@@ -330,10 +349,12 @@ func Test_Cron(t *testing.T) {
 			LineNotifyTime:   0,
 		},
 	}
-	repository.BinanceRepo.Find = func(data, filter interface{}, opts ...*options.FindOptions) error {
+	mock := repository.Mock_Repository{}
+	mock.M_Find = func(data, filter interface{}, opts ...*options.FindOptions) error {
 		b, _ := json.Marshal(mockData)
 		return json.Unmarshal(b, data)
 	}
+	repository.BinanceRepo = &mock
 	defer repository.RestoreRepoMock()
 
 	origLineNotify := configs.Config.LineNotifyURL
@@ -384,10 +405,12 @@ func Test_Cron_Notify_Fail(t *testing.T) {
 			LineNotifyTime:   5,
 		},
 	}
-	repository.BinanceRepo.Find = func(data, filter interface{}, opts ...*options.FindOptions) error {
+	mock := repository.Mock_Repository{}
+	mock.M_Find = func(data, filter interface{}, opts ...*options.FindOptions) error {
 		b, _ := json.Marshal(mockData)
 		return json.Unmarshal(b, data)
 	}
+	repository.BinanceRepo = &mock
 	defer repository.RestoreRepoMock()
 
 	// origLineNotify := configs.Config.LineNotifyURL
@@ -447,9 +470,11 @@ func Test_Cron_NoHeaders(t *testing.T) {
 }
 
 func Test_Cron_Find_Fail(t *testing.T) {
-	repository.BinanceRepo.Find = func(data, filter interface{}, opts ...*options.FindOptions) error {
+	mock := repository.Mock_Repository{}
+	mock.M_Find = func(data, filter interface{}, opts ...*options.FindOptions) error {
 		return mongo.ErrNoDocuments
 	}
+	repository.BinanceRepo = &mock
 	defer repository.RestoreRepoMock()
 
 	app := initialBinanceMock()
