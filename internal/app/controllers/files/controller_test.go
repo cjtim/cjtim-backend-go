@@ -151,15 +151,13 @@ func Test_List_Success(t *testing.T) {
 			LineUID:  "aaaaaaaaaabbbbbbbbb",
 		},
 	}
-	orig := repository.FileRepo.Find
-	restoreOrigiFind := func() {
-		repository.FileRepo.Find = orig
-	}
-	repository.FileRepo.Find = func(data, filter interface{}, opts ...*options.FindOptions) error {
+	mock := repository.Mock_Repository{}
+	mock.M_Find = func(data, filter interface{}, opts ...*options.FindOptions) error {
 		b, _ := json.Marshal(expect)
 		return json.Unmarshal(b, data)
 	}
-	defer restoreOrigiFind()
+	repository.FileRepo = &mock
+	defer repository.RestoreRepoMock()
 
 	// start test
 	app := initFileRoute()
@@ -183,9 +181,11 @@ func Test_List_Success(t *testing.T) {
 
 func Test_List_Fail(t *testing.T) {
 
-	repository.FileRepo.Find = func(data, filter interface{}, opts ...*options.FindOptions) error {
+	mock := repository.Mock_Repository{}
+	mock.M_Find = func(data, filter interface{}, opts ...*options.FindOptions) error {
 		return errors.New("Fail")
 	}
+	repository.FileRepo = &mock
 	defer repository.RestoreRepoMock()
 
 	// start test
