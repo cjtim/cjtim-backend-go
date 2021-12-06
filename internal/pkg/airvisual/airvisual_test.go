@@ -149,3 +149,17 @@ func Test_City_Fail(t *testing.T) {
 	assert.Equal(t, "", err.Error())
 	assert.Nil(t, nil, resp)
 }
+
+func Test_API_InvalidEndpoint(t *testing.T) {
+	origAPI := configs.Config.AirVisualAPICity
+	restoreAPI := func() {
+		configs.Config.AirVisualAPICity = origAPI
+	}
+
+	configs.Config.AirVisualAPICity = "Fake endpoint"
+	defer restoreAPI()
+
+	resp, err := airvisual.GetPhayaThaiCity()
+	assert.NotNil(t, err)
+	assert.Nil(t, nil, resp)
+}
