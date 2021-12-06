@@ -55,9 +55,6 @@ func Test_Get_FoundUser(t *testing.T) {
 		json.Unmarshal(b, data)
 		return nil
 	}
-	mock.M_InsertOne = func(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (primitive.ObjectID, error) {
-		return primitive.NewObjectID(), nil
-	}
 	repository.BinanceRepo = &mock
 	defer repository.RestoreRepoMock()
 
@@ -69,6 +66,7 @@ func Test_Get_FoundUser(t *testing.T) {
 	if err != nil {
 		t.Fatal("cannot parse body")
 	}
+	defer resp.Body.Close()
 	actual := repository.BinanceScheama{}
 	err = json.Unmarshal(bodyBytes, &actual)
 	if err != nil {
@@ -77,7 +75,7 @@ func Test_Get_FoundUser(t *testing.T) {
 	expect := repository.BinanceScheama{
 		LineUID: "aaaaaaaaaabbbbbbbbb",
 		Prices: map[string]interface{}{
-			"BNB": 1,
+			"BNB": 1.00,
 		},
 		LineNotifyTime: 5,
 	}
@@ -91,7 +89,7 @@ func Test_Get_NoUser(t *testing.T) {
 	expect := repository.BinanceScheama{
 		LineUID: "aaaaaaaaaabbbbbbbbb",
 		Prices: map[string]interface{}{
-			"BNB": 1,
+			"BNB": 1.00,
 		},
 		LineNotifyTime: 5,
 	}
@@ -99,14 +97,8 @@ func Test_Get_NoUser(t *testing.T) {
 	app := initialBinanceMock()
 
 	mock := repository.Mock_Repository{}
-	findOneCount := 0
 	mock.M_FindOne = func(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {
-		if findOneCount == 0 {
-			findOneCount++
-			return mongo.ErrNoDocuments
-		}
-		b, _ := json.Marshal(expect)
-		return json.Unmarshal(b, data)
+		return mongo.ErrNoDocuments
 	}
 	mock.M_InsertOne = func(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (primitive.ObjectID, error) {
 		return primitive.NewObjectID(), nil
@@ -121,13 +113,14 @@ func Test_Get_NoUser(t *testing.T) {
 	if err != nil {
 		t.Fatal("cannot parse body")
 	}
+	defer resp.Body.Close()
 	actual := repository.BinanceScheama{}
 	err = json.Unmarshal(bodyBytes, &actual)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, expect.LineUID, actual.LineUID)
+	assert.Equal(t, expect, actual)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 }
@@ -193,7 +186,7 @@ func Test_GetWallet_Pass(t *testing.T) {
 	// start notify microservice server
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintln(w, "{\"test\":\"test\"}")
+		fmt.Fprintln(w, `{"balances":[{"asset":"BTC","free":"0.00000000","locked":"0.00000000"}]}`)
 	})
 	s := httptest.NewServer(handler)
 	configs.Config.BinanceAccountAPI = s.URL
@@ -203,7 +196,12 @@ func Test_GetWallet_Pass(t *testing.T) {
 
 	resp, err := app.Test(req)
 	assert.Nil(t, err)
+	byteBody, err := ioutil.ReadAll(resp.Body)
+	assert.Nil(t, err)
+	defer resp.Body.Close()
+
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, string(byteBody), `[{"asset":"BTC","free":"0.00000000","locked":"0.00000000"}]`)
 
 }
 

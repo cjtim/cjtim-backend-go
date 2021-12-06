@@ -2,6 +2,7 @@ package main
 
 import (
 	"io/ioutil"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -29,10 +30,7 @@ func Test_Route_Ping(t *testing.T) {
 
 	resp, err := app.Test(httptest.NewRequest("GET", "/health", nil))
 	utils.AssertEqual(t, nil, err, "is error?")
-	utils.AssertEqual(t, 200, resp.StatusCode, "Status code")
-	body, err := ioutil.ReadAll(resp.Body)
-	utils.AssertEqual(t, nil, err)
-	utils.AssertEqual(t, "pong", string(body), "PING PONG")
+	utils.AssertEqual(t, http.StatusOK, resp.StatusCode)
 }
 
 func Test_Route_Me(t *testing.T) {

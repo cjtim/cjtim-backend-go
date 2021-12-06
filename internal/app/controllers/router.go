@@ -11,6 +11,37 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+type RouteImpl struct {
+	Files   FilesRoute
+	Binance BinanceRoute
+}
+
+type FilesRoute struct {
+	List_GET    string
+	Upload_POST string
+	Delete_POST string
+}
+type BinanceRoute struct {
+	Get         string
+	Wallet_GET  string
+	Update_POST string
+	CronJob_GET string
+}
+
+var RoutePath = &RouteImpl{
+	Files: FilesRoute{
+		List_GET:    "/files/list",
+		Upload_POST: "/files/upload",
+		Delete_POST: "/files/delete",
+	},
+	Binance: BinanceRoute{
+		Get:         "/binance/get",
+		Wallet_GET:  "/binance/wallet",
+		Update_POST: "/binance/update",
+		CronJob_GET: "/binance/cronjob",
+	},
+}
+
 // Route for all api request
 func Route(r *fiber.App) {
 	r.Get("/", func(c *fiber.Ctx) error {
@@ -21,18 +52,20 @@ func Route(r *fiber.App) {
 	})
 	r.Post("/line/webhook", line_controllers.Webhook)
 	r.Get("/line/weatherBroadcast", line_controllers.WeatherBroadcast)
+	r.Get(RoutePath.Binance.CronJob_GET, binance.Cronjob)
 
-	filesRouteSetup(r)
+	// Files
+	r.Get(RoutePath.Files.List_GET, middlewares.LiffVerify, files.List)
+	r.Post(RoutePath.Files.Upload_POST, middlewares.LiffVerify, files.Upload)
+	r.Post(RoutePath.Files.Delete_POST, middlewares.LiffVerify, files.Delete)
+
 	usersRouteSetup(r)
 	urlsRouteSetup(r)
-	binanceRouteSetup(r)
-}
 
-func filesRouteSetup(r *fiber.App) {
-	fileRoute := r.Group("/files", middlewares.LiffVerify)
-	fileRoute.Get("/list", files.List)
-	fileRoute.Post("/upload", files.Upload)
-	fileRoute.Post("/delete", files.Delete)
+	// Binance
+	r.Get(RoutePath.Binance.Get, middlewares.LiffVerify, binance.Get)
+	r.Get(RoutePath.Binance.Wallet_GET, middlewares.LiffVerify, binance.GetWallet)
+	r.Post(RoutePath.Binance.Update_POST, middlewares.LiffVerify, binance.UpdatePrice)
 }
 
 func usersRouteSetup(r *fiber.App) {
@@ -46,12 +79,4 @@ func urlsRouteSetup(r *fiber.App) {
 	urlsRoute.Post("/add", urls.Add)
 	urlsRoute.Get("/list", urls.List)
 	urlsRoute.Post("/delete", urls.Delete)
-}
-
-func binanceRouteSetup(r *fiber.App) {
-	binanceRoute := r.Group("/binance")
-	binanceRoute.Get("/get", middlewares.LiffVerify, binance.Get)
-	binanceRoute.Get("/wallet", middlewares.LiffVerify, binance.GetWallet)
-	binanceRoute.Post("/update", middlewares.LiffVerify, binance.UpdatePrice)
-	binanceRoute.Get("/cronjob", binance.Cronjob)
 }

@@ -27,7 +27,7 @@ func Get(c *fiber.Ctx) error {
 			BinanceApiKey:    "",
 			BinanceSecretKey: "",
 			Prices: map[string]interface{}{
-				"BNB": 1,
+				"BNB": 1.00,
 			},
 			LineNotifyTime: 5,
 		}
@@ -80,7 +80,7 @@ func Cronjob(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusForbidden)
 	}
 	data := []repository.BinanceScheama{}
-	err := repository.BinanceRepo.Find(&data, nil)
+	err := repository.BinanceRepo.Find(&data, bson.M{})
 	if err != nil {
 		return err
 	}
