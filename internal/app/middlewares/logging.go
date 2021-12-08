@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/cjtim/cjtim-backend-go/configs"
+	"github.com/cjtim/cjtim-backend-go/internal/pkg/discord"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -20,42 +21,59 @@ func InitZap() *zap.Logger {
 	errorFatalLevel := zap.LevelEnablerFunc(func(level zapcore.Level) bool {
 		return level == zapcore.ErrorLevel || level == zapcore.FatalLevel
 	})
+
+	// save to log file
 	w := zapcore.AddSync(&lumberjack.Logger{
 		Filename:   configs.Config.LogFilePath,
 		MaxSize:    10, // megabytes
 		MaxBackups: 1,
 		MaxAge:     1, // days
 	})
+
 	// write syncers
 	stdoutSyncer := zapcore.Lock(os.Stdout)
 	stderrSyncer := zapcore.Lock(os.Stderr)
 
+	// Core
+	infoStdout := zapcore.NewCore(
+		zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
+		stdoutSyncer,
+		infoLevel,
+	)
+	errStdout := zapcore.NewCore(
+		zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
+		stderrSyncer,
+		errorFatalLevel,
+	)
+	saveInfoStdout := zapcore.NewCore(
+		zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
+		w,
+		infoLevel,
+	)
+	saveErrStdout := zapcore.NewCore(
+		zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
+		w,
+		errorFatalLevel,
+	)
+	discordErrStdout := zapcore.NewCore(
+		zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
+		zapcore.AddSync(&discord.DiscordZapAddSync{}),
+		errorFatalLevel,
+	)
 	// tee core
 	core := zapcore.NewTee(
-		zapcore.NewCore(
-			zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
-			stdoutSyncer,
-			infoLevel,
-		),
-		zapcore.NewCore(
-			zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
-			stderrSyncer,
-			errorFatalLevel,
-		),
-		zapcore.NewCore(
-			zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
-			w,
-			infoLevel,
-		),
-		zapcore.NewCore(
-			zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
-			w,
-			errorFatalLevel,
-		),
+		infoStdout,
+		errStdout,
+		saveInfoStdout,
+		saveErrStdout,
+		discordErrStdout,
 	)
 
 	// finally construct the logger with the tee core
-	return zap.New(core)
+	hn, _ := os.Hostname()
+	return zap.New(core).With(
+		zap.String("hostname", hn),
+	)
 }
 
 func RequestLog() func(c *fiber.Ctx) error {

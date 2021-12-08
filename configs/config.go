@@ -25,6 +25,9 @@ type ConfigType struct {
 	RebrandlyWorkspace     string `env:"REBRANDLY_WORDSPACE" envDefault:""`
 	AirVisualKey           string `env:"AIR_API_KEY" envDefault:""`
 	SecretPassphrase       string `env:"SECRET_PASSPHRASE" envDefault:""`
+	DISCORD_TOKEN          string `env:"DISCORD_TOKEN" envDefault:""`
+	DISCORD_ERROR_CHANNEL  string `env:"DISCORD_ERROR_CHANNEL" envDefault:""`
+	DISCORD_SERVER_ID      string `env:"DISCORD_SERVER_ID" envDefault:""`
 	LineNotifyURL          string `env:"MICROSERVICE_BINANCE_LINE_NOTIFY_URL" envDefault:""`
 
 	LineAPIBroadcast        string `envDefault:"https://api.line.me/v2/bot/message/broadcast"`
