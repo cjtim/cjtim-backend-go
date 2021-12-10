@@ -9,8 +9,9 @@ import (
 )
 
 var (
-	origConfig *ConfigType
-	Config     *ConfigType
+	origConfig          *ConfigType
+	Config              *ConfigType
+	AuthorizationHeader = "Authorization"
 )
 
 type ConfigType struct {

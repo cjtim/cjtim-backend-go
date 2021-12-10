@@ -39,7 +39,7 @@ func Webhook(c *fiber.Ctx) error {
 				zap.L().Error("Line webhook error", zap.String("event", "location"), zap.Error(err))
 				return err
 			}
-			err = line.Reply(event.ReplyToken, line.WeatherFlexMessage(weatherData))
+			err = line.Reply(event.ReplyToken, []interface{}{line.WeatherFlexMessage(weatherData)})
 			if err != nil {
 				zap.L().Error("Line webhook error", zap.String("event", "location"), zap.Error(err))
 			}

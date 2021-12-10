@@ -94,7 +94,7 @@ func Cronjob(c *fiber.Ctx) error {
 				Method: http.MethodPost,
 				URL:    configs.Config.LineNotifyURL,
 				Headers: map[string]string{
-					"Authorization": configs.Config.SecretPassphrase,
+					configs.AuthorizationHeader: configs.Config.SecretPassphrase,
 				},
 				Body: user,
 			})

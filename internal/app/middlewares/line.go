@@ -3,6 +3,7 @@ package middlewares
 import (
 	"strings"
 
+	"github.com/cjtim/cjtim-backend-go/configs"
 	"github.com/cjtim/cjtim-backend-go/internal/pkg/line"
 	"github.com/cjtim/cjtim-backend-go/internal/pkg/utils"
 	"github.com/gofiber/fiber/v2"
@@ -10,7 +11,7 @@ import (
 
 func LiffVerify(c *fiber.Ctx) error {
 	headers := utils.HeadersToMapStr(c)
-	split_bearer := strings.Split(headers["Authorization"], " ")
+	split_bearer := strings.Split(headers[configs.AuthorizationHeader], " ")
 	if len(split_bearer) <= 1 {
 		return c.SendStatus(fiber.StatusForbidden)
 	}

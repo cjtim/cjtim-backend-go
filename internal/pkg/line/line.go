@@ -36,7 +36,7 @@ func LineGetProfile(accToken string) (*linebot.UserProfileResponse, error) {
 		Method: http.MethodGet,
 		URL:    "https://api.line.me/v2/profile",
 		Headers: map[string]string{
-			"Authorization": "Bearer " + accToken,
+			configs.AuthorizationHeader: "Bearer " + accToken,
 		},
 	})
 	if err != nil {
@@ -63,10 +63,10 @@ func GetContent(messageID string) ([]byte, string, error) {
 	return fileByte, content.ContentType, nil
 }
 
-func Reply(replayToken string, msgs map[string]interface{}) error {
+func Reply(replayToken string, msgs []interface{}) error {
 	headers := map[string]string{
-		"Content-Type":  "application/json",
-		"Authorization": "Bearer " + configs.Config.LineChannelAccessToken,
+		"Content-Type":              "application/json",
+		configs.AuthorizationHeader: "Bearer " + configs.Config.LineChannelAccessToken,
 	}
 	resp, body, err := utils.Http(&utils.HttpReq{
 		Method:  http.MethodPost,
@@ -86,10 +86,10 @@ func Reply(replayToken string, msgs map[string]interface{}) error {
 	return nil
 }
 
-func Broadcast(msgs map[string]interface{}) error {
+func Broadcast(msgs []interface{}) error {
 	headers := map[string]string{
-		"Content-Type":  "application/json",
-		"Authorization": "Bearer " + configs.Config.LineChannelAccessToken,
+		"Content-Type":              "application/json",
+		configs.AuthorizationHeader: "Bearer " + configs.Config.LineChannelAccessToken,
 	}
 	resp, body, err := utils.Http(&utils.HttpReq{
 		Method:  http.MethodPost,

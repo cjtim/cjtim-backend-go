@@ -11,7 +11,7 @@ func (l *DiscordZapAddSync) Write(p []byte) (n int, err error) {
 	}
 	pc, _, _, _ := runtime.Caller(5)
 	err = client.SendMsg(ErrorsChannel, runtime.FuncForPC(pc).Name(), string(p))
-	defer client.Disconnect()
+	client.Disconnect()
 	return 0, err
 }
 
