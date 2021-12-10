@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/cjtim/cjtim-backend-go/configs"
+
+	controllers "github.com/cjtim/cjtim-backend-go/internal/app/controllers"
 	"github.com/cjtim/cjtim-backend-go/internal/app/controllers/binance"
 	"github.com/cjtim/cjtim-backend-go/internal/app/repository"
 	"github.com/cjtim/cjtim-backend-go/internal/pkg/utils"
@@ -32,60 +34,51 @@ func initialBinanceMock() *fiber.App {
 		})
 		return c.Next()
 	})
-	app.Get("/binance/get", binance.Get)
-	app.Get("/binance/wallet", binance.GetWallet)
-	app.Post("/binance/update", binance.UpdatePrice)
-	app.Get("/binance/cronjob", binance.Cronjob)
+	app.Get(controllers.RoutePath.Binance.Get, binance.Get)
+	app.Get(controllers.RoutePath.Binance.Wallet_GET, binance.GetWallet)
+	app.Post(controllers.RoutePath.Binance.Update_POST, binance.UpdatePrice)
+	app.Get(controllers.RoutePath.Binance.CronJob_GET, binance.Cronjob)
 	return app
 }
 
 func Test_Get_FoundUser(t *testing.T) {
+	expect := repository.BinanceScheama{
+		LineUID: "aaaaaaaaaabbbbbbbbb",
+		Prices: map[string]interface{}{
+			"BNB": 1.0,
+		},
+		LineNotifyTime: 5,
+	}
 	app := initialBinanceMock()
 
+	// Mock
 	mock := repository.Mock_Repository{}
-
 	mock.M_FindOne = func(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {
-		b, _ := json.Marshal(repository.BinanceScheama{
-			LineUID: "aaaaaaaaaabbbbbbbbb",
-			Prices: map[string]interface{}{
-				"BNB": 1,
-			},
-			LineNotifyTime: 5,
-		})
-		json.Unmarshal(b, data)
-		return nil
+		b, _ := json.Marshal(&expect)
+		return json.Unmarshal(b, data)
 	}
 	repository.BinanceRepo = &mock
 	defer repository.RestoreRepoMock()
 
-	req := httptest.NewRequest(http.MethodGet, "/binance/get", nil)
-
+	// Test
+	req := httptest.NewRequest(http.MethodGet, controllers.RoutePath.Binance.Get, nil)
 	resp, err := app.Test(req)
 	assert.Nil(t, err)
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("cannot parse body")
-	}
+	assert.Nil(t, err)
 	defer resp.Body.Close()
+
 	actual := repository.BinanceScheama{}
 	err = json.Unmarshal(bodyBytes, &actual)
-	if err != nil {
-		t.Fatal(err)
-	}
-	expect := repository.BinanceScheama{
-		LineUID: "aaaaaaaaaabbbbbbbbb",
-		Prices: map[string]interface{}{
-			"BNB": 1.00,
-		},
-		LineNotifyTime: 5,
-	}
+	assert.Nil(t, err)
 
-	assert.Equal(t, expect.LineUID, actual.LineUID)
+	assert.Equal(t, expect, actual)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 }
 
 func Test_Get_NoUser(t *testing.T) {
+	// Mock
 	expect := repository.BinanceScheama{
 		LineUID: "aaaaaaaaaabbbbbbbbb",
 		Prices: map[string]interface{}{
@@ -93,9 +86,6 @@ func Test_Get_NoUser(t *testing.T) {
 		},
 		LineNotifyTime: 5,
 	}
-
-	app := initialBinanceMock()
-
 	mock := repository.Mock_Repository{}
 	mock.M_FindOne = func(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {
 		return mongo.ErrNoDocuments
@@ -105,20 +95,18 @@ func Test_Get_NoUser(t *testing.T) {
 	}
 	repository.BinanceRepo = &mock
 	defer repository.RestoreRepoMock()
-	req := httptest.NewRequest(http.MethodGet, "/binance/get", nil)
 
+	// Test
+	app := initialBinanceMock()
+	req := httptest.NewRequest(http.MethodGet, controllers.RoutePath.Binance.Get, nil)
 	resp, err := app.Test(req)
 	assert.Nil(t, err)
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("cannot parse body")
-	}
+	assert.Nil(t, err)
 	defer resp.Body.Close()
 	actual := repository.BinanceScheama{}
 	err = json.Unmarshal(bodyBytes, &actual)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
 
 	assert.Equal(t, expect, actual)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -126,8 +114,6 @@ func Test_Get_NoUser(t *testing.T) {
 }
 
 func Test_Get_FindOne_Fail(t *testing.T) {
-	app := initialBinanceMock()
-
 	mock := repository.Mock_Repository{}
 	mock.M_FindOne = func(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {
 		return mongo.ErrClientDisconnected
@@ -135,8 +121,9 @@ func Test_Get_FindOne_Fail(t *testing.T) {
 	repository.BinanceRepo = &mock
 	defer repository.RestoreRepoMock()
 
-	req := httptest.NewRequest(http.MethodGet, "/binance/get", nil)
-
+	// Test
+	app := initialBinanceMock()
+	req := httptest.NewRequest(http.MethodGet, controllers.RoutePath.Binance.Get, nil)
 	resp, err := app.Test(req)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
@@ -144,8 +131,6 @@ func Test_Get_FindOne_Fail(t *testing.T) {
 }
 
 func Test_Get_Insert_Fail(t *testing.T) {
-	app := initialBinanceMock()
-
 	mock := repository.Mock_Repository{}
 	mock.M_FindOne = func(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {
 		return mongo.ErrNoDocuments
@@ -156,8 +141,9 @@ func Test_Get_Insert_Fail(t *testing.T) {
 	repository.BinanceRepo = &mock
 	defer repository.RestoreRepoMock()
 
-	req := httptest.NewRequest(http.MethodGet, "/binance/get", nil)
-
+	// Test
+	app := initialBinanceMock()
+	req := httptest.NewRequest(http.MethodGet, controllers.RoutePath.Binance.Get, nil)
 	resp, err := app.Test(req)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
@@ -192,7 +178,7 @@ func Test_GetWallet_Pass(t *testing.T) {
 	configs.Config.BinanceAccountAPI = s.URL
 	defer s.Close()
 
-	req := httptest.NewRequest(http.MethodGet, "/binance/wallet", nil)
+	req := httptest.NewRequest(http.MethodGet, controllers.RoutePath.Binance.Wallet_GET, nil)
 
 	resp, err := app.Test(req)
 	assert.Nil(t, err)
@@ -233,7 +219,7 @@ func Test_GetWallet_BinanceAPI_Fail(t *testing.T) {
 	configs.Config.BinanceAccountAPI = s.URL
 	defer s.Close()
 
-	req := httptest.NewRequest(http.MethodGet, "/binance/wallet", nil)
+	req := httptest.NewRequest(http.MethodGet, controllers.RoutePath.Binance.Wallet_GET, nil)
 
 	resp, err := app.Test(req)
 	assert.Nil(t, err)
@@ -250,7 +236,7 @@ func Test_GetWallet_FindOne_Fail(t *testing.T) {
 	repository.BinanceRepo = &mock
 	defer repository.RestoreRepoMock()
 
-	req := httptest.NewRequest(http.MethodGet, "/binance/wallet", nil)
+	req := httptest.NewRequest(http.MethodGet, controllers.RoutePath.Binance.Wallet_GET, nil)
 
 	resp, err := app.Test(req)
 	assert.Nil(t, err)
@@ -272,7 +258,7 @@ func Test_GetWallet_NoAPIKey(t *testing.T) {
 	repository.BinanceRepo = &mock
 	defer repository.RestoreRepoMock()
 
-	req := httptest.NewRequest(http.MethodGet, "/binance/wallet", nil)
+	req := httptest.NewRequest(http.MethodGet, controllers.RoutePath.Binance.Wallet_GET, nil)
 
 	resp, err := app.Test(req)
 	assert.Nil(t, err)
@@ -302,7 +288,7 @@ func Test_UpdatePrice_Pass(t *testing.T) {
 	app := initialBinanceMock()
 	req, err := utils.HttpPrepareRequest(&utils.HttpReq{
 		Method: http.MethodPost,
-		URL:    "/binance/update",
+		URL:    controllers.RoutePath.Binance.Update_POST,
 		Body:   expect,
 		Headers: map[string]string{
 			"Content-Type": "application/json",
@@ -321,7 +307,7 @@ func Test_UpdatePrice_Fail(t *testing.T) {
 
 	req, _ := utils.HttpPrepareRequest(&utils.HttpReq{
 		Method: http.MethodPost,
-		URL:    "/binance/update",
+		URL:    controllers.RoutePath.Binance.Update_POST,
 		Headers: map[string]string{
 			"Content-Type": "application/json",
 		},
@@ -362,10 +348,6 @@ func Test_Cron(t *testing.T) {
 	// start notify microservice server
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		if r.Header.Get("Authorization") == configs.Config.SecretPassphrase {
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
 		w.WriteHeader(http.StatusOK)
 	})
 	s := httptest.NewServer(handler)
@@ -376,10 +358,7 @@ func Test_Cron(t *testing.T) {
 
 	req, _ := utils.HttpPrepareRequest(&utils.HttpReq{
 		Method: http.MethodGet,
-		URL:    "/binance/cronjob",
-		Headers: map[string]string{
-			"Authorization": configs.Config.SecretPassphrase,
-		},
+		URL:    controllers.RoutePath.Binance.CronJob_GET,
 	})
 
 	resp, err := app.Test(req)
@@ -394,13 +373,13 @@ func Test_Cron_Notify_Fail(t *testing.T) {
 			BinanceApiKey:    "A",
 			BinanceSecretKey: "B",
 			LineNotifyToken:  "A",
-			LineNotifyTime:   10,
+			LineNotifyTime:   int64(time.Now().Minute()),
 		},
 		{
 			BinanceApiKey:    "AA",
 			BinanceSecretKey: "BB",
 			LineNotifyToken:  "B",
-			LineNotifyTime:   5,
+			LineNotifyTime:   0,
 		},
 	}
 	mock := repository.Mock_Repository{}
@@ -411,59 +390,16 @@ func Test_Cron_Notify_Fail(t *testing.T) {
 	repository.BinanceRepo = &mock
 	defer repository.RestoreRepoMock()
 
-	// origLineNotify := configs.Config.LineNotifyURL
-	// restoreLineNotify := func() { configs.Config.LineNotifyURL = origLineNotify }
-	// defer restoreLineNotify()
-
-	// start notify microservice server
-	// handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	// 	w.WriteHeader(http.StatusInternalServerError)
-	// })
-	// s := httptest.NewServer(handler)
-	// defer s.Close()
-	// configs.Config.LineNotifyURL = s.URL
-
 	app := initialBinanceMock()
 
 	req, _ := utils.HttpPrepareRequest(&utils.HttpReq{
 		Method: http.MethodGet,
-		URL:    "/binance/cronjob",
-		Headers: map[string]string{
-			"Authorization": configs.Config.SecretPassphrase,
-		},
+		URL:    controllers.RoutePath.Binance.CronJob_GET,
 	})
 
 	resp, err := app.Test(req)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-
-}
-
-func Test_Cron_NoHeaders(t *testing.T) {
-	app := initialBinanceMock()
-	// 1. invalid headers
-	// 2. no authorization headers
-
-	req, _ := utils.HttpPrepareRequest(&utils.HttpReq{
-		Method: http.MethodGet,
-		URL:    "/binance/cronjob",
-		Headers: map[string]string{
-			"Authorization": "a",
-		},
-	})
-
-	resp, err := app.Test(req)
-	assert.Nil(t, err)
-	assert.Equal(t, http.StatusForbidden, resp.StatusCode)
-
-	req, _ = utils.HttpPrepareRequest(&utils.HttpReq{
-		Method: http.MethodGet,
-		URL:    "/binance/cronjob",
-	})
-
-	resp, err = app.Test(req)
-	assert.Nil(t, err)
-	assert.Equal(t, http.StatusForbidden, resp.StatusCode)
 
 }
 
@@ -479,10 +415,7 @@ func Test_Cron_Find_Fail(t *testing.T) {
 
 	req, _ := utils.HttpPrepareRequest(&utils.HttpReq{
 		Method: http.MethodGet,
-		URL:    "/binance/cronjob",
-		Headers: map[string]string{
-			"Authorization": configs.Config.SecretPassphrase,
-		},
+		URL:    controllers.RoutePath.Binance.CronJob_GET,
 	})
 
 	resp, err := app.Test(req)

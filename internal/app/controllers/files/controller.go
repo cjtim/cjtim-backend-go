@@ -3,10 +3,10 @@ package files
 import (
 	"io/ioutil"
 
+	"github.com/cjtim/cjtim-backend-go/internal/app/middlewares"
 	"github.com/cjtim/cjtim-backend-go/internal/app/repository"
 	"github.com/cjtim/cjtim-backend-go/internal/pkg/files"
 	"github.com/gofiber/fiber/v2"
-	"github.com/line/line-bot-sdk-go/linebot"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -27,7 +27,7 @@ func Upload(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	user := c.Locals("user").(*linebot.UserProfileResponse)
+	user := middlewares.GetUser(c)
 
 	json, err := files.Client.Add(file.Filename, bdata, user.UserID)
 	if err != nil {
@@ -37,7 +37,7 @@ func Upload(c *fiber.Ctx) error {
 }
 
 func List(c *fiber.Ctx) error {
-	user := c.Locals("user").(*linebot.UserProfileResponse)
+	user := middlewares.GetUser(c)
 	files := []repository.FileScheama{}
 	err := repository.FileRepo.Find(&files, bson.M{"lineUid": user.UserID})
 	if err != nil {
@@ -49,7 +49,7 @@ func List(c *fiber.Ctx) error {
 }
 
 func Delete(c *fiber.Ctx) error {
-	user := c.Locals("user").(*linebot.UserProfileResponse)
+	user := middlewares.GetUser(c)
 	body := &struct {
 		Filename string `json:"fileName"`
 	}{}

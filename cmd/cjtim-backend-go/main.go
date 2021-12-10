@@ -7,7 +7,7 @@ import (
 	"syscall"
 
 	"github.com/cjtim/cjtim-backend-go/configs"
-	api "github.com/cjtim/cjtim-backend-go/internal/app/controllers"
+	controller "github.com/cjtim/cjtim-backend-go/internal/app/controllers"
 	"github.com/cjtim/cjtim-backend-go/internal/app/middlewares"
 	"github.com/cjtim/cjtim-backend-go/internal/app/repository"
 	"github.com/gofiber/fiber/v2"
@@ -50,7 +50,7 @@ func startServer() *fiber.App {
 	})
 	app.Use(middlewares.Cors())
 	app.Use(middlewares.RequestLog())
-	api.Route(app) // setup router path
+	controller.Route(app) // setup router path
 	return app
 }
 

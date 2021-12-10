@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/cjtim/cjtim-backend-go/configs"
+	"github.com/cjtim/cjtim-backend-go/internal/app/middlewares"
 	"github.com/cjtim/cjtim-backend-go/internal/app/repository"
 	"github.com/cjtim/cjtim-backend-go/internal/pkg/binance"
 	"github.com/cjtim/cjtim-backend-go/internal/pkg/utils"
 	"github.com/gofiber/fiber/v2"
-	"github.com/line/line-bot-sdk-go/linebot"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/zap"
@@ -18,7 +18,7 @@ import (
 
 func Get(c *fiber.Ctx) error {
 	data := repository.BinanceScheama{}
-	user := c.Locals("user").(*linebot.UserProfileResponse)
+	user := middlewares.GetUser(c)
 	err := repository.BinanceRepo.FindOne(&data, bson.M{"lineUid": user.UserID})
 	if err == mongo.ErrNoDocuments {
 		data = repository.BinanceScheama{
@@ -44,7 +44,7 @@ func Get(c *fiber.Ctx) error {
 }
 
 func GetWallet(c *fiber.Ctx) error {
-	user := c.Locals("user").(*linebot.UserProfileResponse)
+	user := middlewares.GetUser(c)
 	userBinance := repository.BinanceScheama{}
 	err := repository.BinanceRepo.FindOne(&userBinance, bson.M{"lineUid": user.UserID})
 	if err != nil {
@@ -68,17 +68,12 @@ func UpdatePrice(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	user := c.Locals("user").(*linebot.UserProfileResponse)
+	user := middlewares.GetUser(c)
 	repository.BinanceRepo.FindOneAndReplace(context.TODO(), bson.M{"lineUid": user.UserID}, &data)
 	return c.SendStatus(200)
 }
 
 func Cronjob(c *fiber.Ctx) error {
-	headers := utils.HeadersToMapStr(c)
-	_, found := headers["Authorization"]
-	if !found || headers["Authorization"] != configs.Config.SecretPassphrase {
-		return c.SendStatus(fiber.StatusForbidden)
-	}
 	data := []repository.BinanceScheama{}
 	err := repository.BinanceRepo.Find(&data, bson.M{})
 	if err != nil {
@@ -99,7 +94,7 @@ func Cronjob(c *fiber.Ctx) error {
 				Method: http.MethodPost,
 				URL:    configs.Config.LineNotifyURL,
 				Headers: map[string]string{
-					"Authorization": configs.Config.SecretPassphrase,
+					configs.AuthorizationHeader: configs.Config.SecretPassphrase,
 				},
 				Body: user,
 			})

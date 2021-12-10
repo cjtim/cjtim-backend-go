@@ -20,7 +20,8 @@ type RebrandlyDomainReq struct {
 
 // Add -
 func Add(originalURL string) (*repository.URLScheama, error) {
-	if originalURL[:8] != "https://" && originalURL[:7] != "http://" {
+	noProtocol := originalURL[:8] != "https://" && originalURL[:7] != "http://"
+	if noProtocol {
 		originalURL = "http://" + originalURL
 	}
 	body := &RebrandlyNewUrlReq{
@@ -43,14 +44,12 @@ func Add(originalURL string) (*repository.URLScheama, error) {
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New(string(respBody))
 	}
 	data := repository.URLScheama{}
-	if err := json.Unmarshal(respBody, &data); err != nil {
-		return nil, err
-	}
-	return &data, nil
+	err = json.Unmarshal(respBody, &data)
+	return &data, err
 }
 
 func Delete(id string) error {

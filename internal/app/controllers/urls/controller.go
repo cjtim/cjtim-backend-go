@@ -3,10 +3,10 @@ package urls
 import (
 	"context"
 
+	"github.com/cjtim/cjtim-backend-go/internal/app/middlewares"
 	"github.com/cjtim/cjtim-backend-go/internal/app/repository"
 	"github.com/cjtim/cjtim-backend-go/internal/pkg/rebrandly"
 	"github.com/gofiber/fiber/v2"
-	"github.com/line/line-bot-sdk-go/linebot"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -18,7 +18,7 @@ type URLDeleteBody struct {
 }
 
 func Add(c *fiber.Ctx) error {
-	user := c.Locals("user").(*linebot.UserProfileResponse)
+	user := middlewares.GetUser(c)
 	body := URLAddBody{}
 	err := c.BodyParser(&body)
 	if err != nil {
@@ -38,7 +38,7 @@ func Add(c *fiber.Ctx) error {
 }
 
 func List(c *fiber.Ctx) error {
-	user := c.Locals("user").(*linebot.UserProfileResponse)
+	user := middlewares.GetUser(c)
 	urls := []repository.URLScheama{}
 	err := repository.UrlRepo.Find(&urls, bson.M{"lineUid": user.UserID})
 	if err != nil {
@@ -50,7 +50,7 @@ func List(c *fiber.Ctx) error {
 }
 
 func Delete(c *fiber.Ctx) error {
-	user := c.Locals("user").(*linebot.UserProfileResponse)
+	user := middlewares.GetUser(c)
 	body := URLDeleteBody{}
 	err := c.BodyParser(&body)
 	if err != nil {
