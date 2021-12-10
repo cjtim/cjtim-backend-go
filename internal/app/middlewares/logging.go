@@ -14,12 +14,17 @@ import (
 func InitZap() *zap.Logger {
 
 	infoLevel := zap.LevelEnablerFunc(func(level zapcore.Level) bool {
-		return level == zapcore.InfoLevel
+		return level == zapcore.InfoLevel ||
+			level == zapcore.WarnLevel ||
+			level == zapcore.DebugLevel
 	})
 
 	// error and fatal level enabler
 	errorFatalLevel := zap.LevelEnablerFunc(func(level zapcore.Level) bool {
-		return level == zapcore.ErrorLevel || level == zapcore.FatalLevel
+		return level == zapcore.ErrorLevel ||
+			level == zapcore.FatalLevel ||
+			level == zapcore.PanicLevel ||
+			level == zapcore.DPanicLevel
 	})
 
 	// save to log file

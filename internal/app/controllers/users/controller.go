@@ -3,19 +3,19 @@ package users
 import (
 	"context"
 
+	"github.com/cjtim/cjtim-backend-go/internal/app/middlewares"
 	"github.com/cjtim/cjtim-backend-go/internal/app/repository"
 	"github.com/gofiber/fiber/v2"
-	"github.com/line/line-bot-sdk-go/linebot"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 func Me(c *fiber.Ctx) error {
-	profile := c.Locals("user").(*linebot.UserProfileResponse)
+	profile := middlewares.GetUser(c)
 	return c.JSON(profile)
 }
 
 func Update(c *fiber.Ctx) error {
-	profile := c.Locals("user").(*linebot.UserProfileResponse)
+	profile := middlewares.GetUser(c)
 	profileFilter := bson.M{"lineUid": profile.UserID}
 	body := repository.UserScheama{}
 

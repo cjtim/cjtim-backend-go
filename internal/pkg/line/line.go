@@ -36,25 +36,19 @@ func LineGetProfile(accToken string) (*linebot.UserProfileResponse, error) {
 		Method: http.MethodGet,
 		URL:    "https://api.line.me/v2/profile",
 		Headers: map[string]string{
-			"Authorization": "Bearer " + accToken,
+			configs.AuthorizationHeader: "Bearer " + accToken,
 		},
 	})
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New(string(body))
 	}
+
 	profile := &linebot.UserProfileResponse{}
-	if resp.StatusCode == 200 {
-		body := body
-		err := json.Unmarshal(body, &profile)
-		if err != nil {
-			return nil, err
-		}
-		return profile, nil
-	}
-	return nil, errors.New(string(body))
+	err = json.Unmarshal(body, &profile)
+	return profile, err
 }
 
 func GetContent(messageID string) ([]byte, string, error) {
@@ -71,8 +65,8 @@ func GetContent(messageID string) ([]byte, string, error) {
 
 func Reply(replayToken string, msgs []interface{}) error {
 	headers := map[string]string{
-		"Content-Type":  "application/json",
-		"Authorization": "Bearer " + configs.Config.LineChannelAccessToken,
+		"Content-Type":              "application/json",
+		configs.AuthorizationHeader: "Bearer " + configs.Config.LineChannelAccessToken,
 	}
 	resp, body, err := utils.Http(&utils.HttpReq{
 		Method:  http.MethodPost,
@@ -86,7 +80,7 @@ func Reply(replayToken string, msgs []interface{}) error {
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return errors.New(string(body))
 	}
 	return nil
@@ -94,8 +88,8 @@ func Reply(replayToken string, msgs []interface{}) error {
 
 func Broadcast(msgs []interface{}) error {
 	headers := map[string]string{
-		"Content-Type":  "application/json",
-		"Authorization": "Bearer " + configs.Config.LineChannelAccessToken,
+		"Content-Type":              "application/json",
+		configs.AuthorizationHeader: "Bearer " + configs.Config.LineChannelAccessToken,
 	}
 	resp, body, err := utils.Http(&utils.HttpReq{
 		Method:  http.MethodPost,
@@ -108,7 +102,7 @@ func Broadcast(msgs []interface{}) error {
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return errors.New(string(body))
 	}
 	return nil

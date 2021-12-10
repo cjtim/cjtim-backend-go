@@ -9,8 +9,9 @@ import (
 )
 
 var (
-	origConfig *ConfigType
-	Config     *ConfigType
+	AuthorizationHeader = "Authorization"
+	Config              *ConfigType
+	origConfig          ConfigType
 )
 
 type ConfigType struct {
@@ -53,10 +54,10 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	origConfig = &cfg
 	Config = &cfg
+	origConfig = cfg
 }
 
 func RestoreConfigMock() {
-	Config = origConfig
+	Config = &origConfig
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/cjtim/cjtim-backend-go/internal/pkg/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/line/line-bot-sdk-go/linebot"
+	"go.uber.org/zap"
 )
 
 // Webhook - for line webhook
@@ -24,35 +25,42 @@ func Webhook(c *fiber.Ctx) error {
 	for k, v := range utils.HeadersToMapStr(c) {
 		httpReq.Header.Set(k, v)
 	}
-	event, err := linebot.ParseRequest(configs.Config.LineChannelSecret, httpReq)
+	events, err := linebot.ParseRequest(configs.Config.LineChannelSecret, httpReq)
 	if err != nil {
 		return err
 	}
 	// Webhook type
-	if len(event) > 0 {
-		switch EventMessageType(event[0]) {
+	for _, event := range events {
+		switch EventMessageType(event) {
 		case "location":
-			location := event[0].Message.(*linebot.LocationMessage)
+			location := event.Message.(*linebot.LocationMessage)
 			weatherData, err := airvisual.GetByLocation(location.Latitude, location.Longitude)
 			if err != nil {
+				zap.L().Error("Line webhook error", zap.String("event", "location"), zap.Error(err))
 				return err
 			}
-			err = line.Reply(event[0].ReplyToken,
-				[]interface{}{line.WeatherFlexMessage(weatherData)})
+			err = line.Reply(event.ReplyToken, []interface{}{line.WeatherFlexMessage(weatherData)})
 			if err != nil {
-				return err
+				zap.L().Error("Line webhook error", zap.String("event", "location"), zap.Error(err))
 			}
-			return nil
+			return err
 		case "file":
-			message := event[0].Message.(*linebot.FileMessage)
-			_, err = files.Client.AddFromLine(message.ID, event[0].Source.UserID)
+			message := event.Message.(*linebot.FileMessage)
+			_, err = files.Client.AddFromLine(message.ID, event.Source.UserID)
+			if err != nil {
+				zap.L().Error("Line webhook error", zap.String("event", "file"), zap.Error(err))
+			}
 			return err
 		case "image":
-			message := event[0].Message.(*linebot.ImageMessage)
-			_, err = files.Client.AddFromLine(message.ID, event[0].Source.UserID)
+			message := event.Message.(*linebot.ImageMessage)
+			_, err = files.Client.AddFromLine(message.ID, event.Source.UserID)
+			if err != nil {
+				zap.L().Error("Line webhook error", zap.String("event", "image"), zap.Error(err))
+			}
 			return err
 		}
 	}
+
 	return c.SendStatus(fiber.StatusOK)
 }
 
