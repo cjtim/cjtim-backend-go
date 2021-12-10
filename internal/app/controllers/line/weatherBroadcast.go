@@ -11,14 +11,15 @@ import (
 func WeatherBroadcast(c *fiber.Ctx) error {
 	resp, err := airvisual.GetPhayaThaiCity()
 	if err != nil {
+		zap.L().Error("WeatherBroadcast error get airvisual", zap.Error(err))
 		return err
 	}
 	msgs := line.WeatherFlexMessage(resp)
 	err = line.Broadcast(msgs)
 	if err != nil {
+		zap.L().Error("WeatherBroadcast error line.Broadcast", zap.Error(err))
 		return nil
 	}
-
 	zap.L().Info("WeatherBroadcast")
 	return c.SendStatus(fiber.StatusOK)
 }

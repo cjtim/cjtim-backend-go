@@ -42,19 +42,13 @@ func LineGetProfile(accToken string) (*linebot.UserProfileResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New(string(body))
 	}
+
 	profile := &linebot.UserProfileResponse{}
-	if resp.StatusCode == 200 {
-		body := body
-		err := json.Unmarshal(body, &profile)
-		if err != nil {
-			return nil, err
-		}
-		return profile, nil
-	}
-	return nil, errors.New(string(body))
+	err = json.Unmarshal(body, &profile)
+	return profile, err
 }
 
 func GetContent(messageID string) ([]byte, string, error) {
@@ -86,7 +80,7 @@ func Reply(replayToken string, msgs map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return errors.New(string(body))
 	}
 	return nil
@@ -108,7 +102,7 @@ func Broadcast(msgs map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return errors.New(string(body))
 	}
 	return nil
