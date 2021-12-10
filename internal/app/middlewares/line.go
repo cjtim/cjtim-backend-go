@@ -7,6 +7,7 @@ import (
 	"github.com/cjtim/cjtim-backend-go/internal/pkg/line"
 	"github.com/cjtim/cjtim-backend-go/internal/pkg/utils"
 	"github.com/gofiber/fiber/v2"
+	"github.com/line/line-bot-sdk-go/linebot"
 )
 
 func LiffVerify(c *fiber.Ctx) error {
@@ -26,4 +27,8 @@ func LiffVerify(c *fiber.Ctx) error {
 	}
 	c.Locals("user", profile)
 	return c.Next()
+}
+
+func GetUser(c *fiber.Ctx) *linebot.UserProfileResponse {
+	return c.Locals("user").(*linebot.UserProfileResponse)
 }
