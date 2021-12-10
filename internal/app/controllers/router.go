@@ -1,4 +1,4 @@
-package api
+package controller
 
 import (
 	"github.com/cjtim/cjtim-backend-go/internal/app/controllers/binance"
@@ -14,6 +14,7 @@ import (
 type RouteImpl struct {
 	Files   FilesRoute
 	Binance BinanceRoute
+	Urls    UrlRoute
 }
 
 type FilesRoute struct {
@@ -28,6 +29,12 @@ type BinanceRoute struct {
 	CronJob_GET string
 }
 
+type UrlRoute struct {
+	Add_POST    string
+	List_GET    string
+	Delete_POST string
+}
+
 var RoutePath = &RouteImpl{
 	Files: FilesRoute{
 		List_GET:    "/files/list",
@@ -40,6 +47,11 @@ var RoutePath = &RouteImpl{
 		Update_POST: "/binance/update",
 		CronJob_GET: "/binance/cronjob",
 	},
+	Urls: UrlRoute{
+		Add_POST:    "/urls/add",
+		List_GET:    "/urls/list",
+		Delete_POST: "/urls/delete",
+	},
 }
 
 // Route for all api request
@@ -51,8 +63,8 @@ func Route(r *fiber.App) {
 		return c.SendString("pong")
 	})
 	r.Post("/line/webhook", line_controllers.Webhook)
-	r.Get("/line/weatherBroadcast", line_controllers.WeatherBroadcast)
-	r.Get(RoutePath.Binance.CronJob_GET, binance.Cronjob)
+	r.Get("/line/weatherBroadcast", middlewares.InternalAuth, line_controllers.WeatherBroadcast)
+	r.Get(RoutePath.Binance.CronJob_GET, middlewares.InternalAuth, binance.Cronjob)
 
 	// Files
 	r.Get(RoutePath.Files.List_GET, middlewares.LiffVerify, files.List)
@@ -60,23 +72,21 @@ func Route(r *fiber.App) {
 	r.Post(RoutePath.Files.Delete_POST, middlewares.LiffVerify, files.Delete)
 
 	usersRouteSetup(r)
-	urlsRouteSetup(r)
 
 	// Binance
 	r.Get(RoutePath.Binance.Get, middlewares.LiffVerify, binance.Get)
 	r.Get(RoutePath.Binance.Wallet_GET, middlewares.LiffVerify, binance.GetWallet)
 	r.Post(RoutePath.Binance.Update_POST, middlewares.LiffVerify, binance.UpdatePrice)
+
+	// Urls
+	r.Post(RoutePath.Urls.Add_POST, middlewares.LiffVerify, urls.Add)
+	r.Get(RoutePath.Urls.List_GET, middlewares.LiffVerify, urls.List)
+	r.Post(RoutePath.Urls.Delete_POST, middlewares.LiffVerify, urls.Delete)
+
 }
 
 func usersRouteSetup(r *fiber.App) {
 	usersRoute := r.Group("/users", middlewares.LiffVerify)
 	usersRoute.Get("/me", users.Me)
 	usersRoute.Post("/update", users.Update)
-}
-
-func urlsRouteSetup(r *fiber.App) {
-	urlsRoute := r.Group("/urls", middlewares.LiffVerify)
-	urlsRoute.Post("/add", urls.Add)
-	urlsRoute.Get("/list", urls.List)
-	urlsRoute.Post("/delete", urls.Delete)
 }

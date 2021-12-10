@@ -69,7 +69,7 @@ func GetContent(messageID string) ([]byte, string, error) {
 	return fileByte, content.ContentType, nil
 }
 
-func Reply(replayToken string, msgs []interface{}) error {
+func Reply(replayToken string, msgs map[string]interface{}) error {
 	headers := map[string]string{
 		"Content-Type":  "application/json",
 		"Authorization": "Bearer " + configs.Config.LineChannelAccessToken,
@@ -92,7 +92,7 @@ func Reply(replayToken string, msgs []interface{}) error {
 	return nil
 }
 
-func Broadcast(msgs []interface{}) error {
+func Broadcast(msgs map[string]interface{}) error {
 	headers := map[string]string{
 		"Content-Type":  "application/json",
 		"Authorization": "Bearer " + configs.Config.LineChannelAccessToken,

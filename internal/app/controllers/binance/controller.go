@@ -74,11 +74,6 @@ func UpdatePrice(c *fiber.Ctx) error {
 }
 
 func Cronjob(c *fiber.Ctx) error {
-	headers := utils.HeadersToMapStr(c)
-	_, found := headers["Authorization"]
-	if !found || headers["Authorization"] != configs.Config.SecretPassphrase {
-		return c.SendStatus(fiber.StatusForbidden)
-	}
 	data := []repository.BinanceScheama{}
 	err := repository.BinanceRepo.Find(&data, bson.M{})
 	if err != nil {
