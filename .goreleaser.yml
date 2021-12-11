@@ -9,9 +9,15 @@ before:
 builds:
   - env:
       - CGO_ENABLED=0
+      - GO111MODULE=off
+    goos:
+      - windows
+    main: cmd/cjtim-backend-go/main.go
+
+  - env:
+      - CGO_ENABLED=0
     goos:
       - linux
-      - windows
       - darwin
     main: cmd/cjtim-backend-go/main.go
 checksum:
