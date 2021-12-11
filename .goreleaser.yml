@@ -7,14 +7,16 @@ before:
     # you may remove this if you don't need go generate
     - go generate ./...
 builds:
-  - env:
+  - id: "windows"
+    env:
       - CGO_ENABLED=0
       - GO111MODULE=off
     goos:
       - windows
     main: cmd/cjtim-backend-go/main.go
 
-  - env:
+  - id: "linux_and_darwin"
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
