@@ -1,5 +1,7 @@
 # This is an example .goreleaser.yml file with some sensible defaults.
 # Make sure to check the documentation at https://goreleaser.com
+env:
+  - GO111MODULE=on
 before:
   hooks:
     # You may remove this if you don't use go modules.
@@ -7,13 +9,29 @@ before:
     # you may remove this if you don't need go generate
     - go generate ./...
 builds:
-  - env:
+  - id: "windows"
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - windows
+    goarch:
+      - "386"
+      - amd64
+    main: cmd/cjtim-backend-go/main.go
+
+  - id: "linux_and_darwin"
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
-      # - windows
       - darwin
+    goarch:
+      - "386"
+      - amd64
+      - arm
+      - arm64
     main: cmd/cjtim-backend-go/main.go
+
 checksum:
   name_template: "checksums.txt"
 snapshot:
