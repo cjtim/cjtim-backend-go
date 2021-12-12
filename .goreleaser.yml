@@ -9,7 +9,7 @@ before:
     # you may remove this if you don't need go generate
     - go generate ./...
 builds:
-  - id: "window"
+  - id: "windows"
     env:
       - CGO_ENABLED=0
     goos:
@@ -19,7 +19,7 @@ builds:
       - amd64
     main: cmd/cjtim-backend-go/main.go
 
-  - id: "linux"
+  - id: "linux_and_darwin"
     env:
       - CGO_ENABLED=0
     goos:
