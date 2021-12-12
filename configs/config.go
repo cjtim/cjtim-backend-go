@@ -36,6 +36,7 @@ type ConfigType struct {
 	AirVisualAPINearestCity string `envDefault:"http://api.airvisual.com/v2/nearest_city"`
 	AirVisualAPICity        string `envDefault:"http://api.airvisual.com/v2/city"`
 	BinanceAccountAPI       string `envDefault:"https://api.binance.com/api/v3/account"`
+	RebrandlyAPI            string `envDefault:"https://api.rebrandly.com/v1/links"`
 	LogFilePath             string `env:"LOG_PATH" envDefault:"/var/log/cjtim-backend-go.log"`
 	GCLOUD_CREDENTIAL       string `env:"GCLOUD_CREDENTIAL" envDefault:"./configs/serviceAcc.json"`
 }

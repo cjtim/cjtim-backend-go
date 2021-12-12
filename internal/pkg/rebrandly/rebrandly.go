@@ -37,7 +37,7 @@ func Add(originalURL string) (*repository.URLScheama, error) {
 	}
 	resp, respBody, err := utils.Http(&utils.HttpReq{
 		Method:  http.MethodPost,
-		URL:     "https://api.rebrandly.com/v1/links",
+		URL:     configs.Config.RebrandlyAPI,
 		Headers: headers,
 		Body:    body,
 	})
@@ -58,13 +58,13 @@ func Delete(id string) error {
 	}
 	resp, body, err := utils.Http(&utils.HttpReq{
 		Method:  http.MethodDelete,
-		URL:     "https://api.rebrandly.com/v1/links/" + id,
+		URL:     configs.Config.RebrandlyAPI + "/" + id,
 		Headers: headers,
 	})
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return errors.New(string(body))
 	}
 	return nil
