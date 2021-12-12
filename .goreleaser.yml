@@ -9,12 +9,27 @@ before:
     # you may remove this if you don't need go generate
     - go generate ./...
 builds:
-  - env:
+  - id: "window"
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - windows
+    goarch:
+      - "386"
+      - amd64
+    main: cmd/cjtim-backend-go/main.go
+
+  - id: "linux"
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
-      - windows
       - darwin
+    goarch:
+      - "386"
+      - amd64
+      - arm
+      - arm64
     main: cmd/cjtim-backend-go/main.go
 
 checksum:
