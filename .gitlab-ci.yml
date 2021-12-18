@@ -159,8 +159,7 @@ okteto:
   script:
     - export OKTETO_TOKEN=$(echo $OKTETO_TOKEN | base64 -d)
     - okteto namespace
-    - sed -e "s/TAG/$TAG/" k8s/deployment.yaml | kubectl apply -f -
-    - kubectl apply -f k8s/service.yaml
+    - helm upgrade -i cjtim-backend-go helm --set image.tag=$TAG
   rules:
     - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
 
@@ -173,7 +172,7 @@ release-tag:
     name: ghcr.io/go-semantic-release/semantic-release:2.17.0
     entrypoint: [""]
   script:
-    - /usr/local/bin/semantic-release
+    - /usr/local/bin/semantic-release || true
 
 release:
   stage: release

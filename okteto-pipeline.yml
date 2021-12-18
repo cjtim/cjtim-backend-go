@@ -1,3 +1,2 @@
 deploy:
-  - sed -e "s/TAG/$TAG/" k8s/deployment.yaml | kubectl apply -f -
-  - kubectl apply -f k8s/service.yaml
+  - helm upgrade -i cjtim-backend-go helm --set image.tag=$TAG

@@ -1,17 +1,34 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cjtim-backend-go
+  name: {{ include "charts.fullname" . }}
+  labels:
+    {{- include "charts.labels" . | nindent 4 }}
 spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
-      app: cjtim-backend-go
-  replicas: 1
+      {{- include "charts.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       labels:
-        app: cjtim-backend-go
+        {{- include "charts.selectorLabels" . | nindent 8 }}
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "charts.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+
+      {{- if .Values.logging.enabled }}
       initContainers:
         - name: init-config
           image: busybox
@@ -72,14 +89,13 @@ spec:
               </match>
             - EOF
           resources:
-            limits:
-              cpu: 100m
-              memory: 50Mi
+            {{- toYaml .Values.logging.resources | nindent 12 }}
           volumeMounts:
             - name: config-volume
               mountPath: /fluentd/etc
+      {{- end }}
+
       containers:
-        # Logging agent
         - name: fluentd
           image: grafana/fluent-plugin-loki:master
           envFrom:
@@ -87,7 +103,7 @@ spec:
                 name: loki
           env:
             - name: "APP_NAME"
-              value: "cjtim-backend-go"
+              value: {{ include "charts.fullname" . }}
           command:
             [
               "fluentd",
@@ -98,9 +114,7 @@ spec:
               "--under-supervisor",
             ]
           resources:
-            limits:
-              cpu: 100m
-              memory: 50Mi
+            {{- toYaml .Values.logging.resources | nindent 12 }}
           volumeMounts:
             - name: varlog
               mountPath: /var/log
@@ -108,34 +122,52 @@ spec:
             - name: config-volume
               mountPath: /fluentd/etc
               readOnly: true
-        # Application
-        - name: cjtim-backend-go
-          # TAG will be replace during Gitlab CI pipeline
-          image: registry.gitlab.com/cjtim/cjtim-backend-go:TAG
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
           envFrom:
             - configMapRef:
                 name: cjtim-backend-go-configmap
           env:
             - name: GCLOUD_CREDENTIAL
               value: /tmp/configmap/serviceAcc.json
-          resources:
-            limits:
-              cpu: 400m
-              memory: 256Mi
-          ports:
-            - containerPort: 8080
-          livenessProbe:
-            initialDelaySeconds: 10
-            periodSeconds: 30
-            httpGet:
-              path: /health
-              port: 8080
           volumeMounts:
             - name: varlog
               mountPath: /var/log
             - name: gcp-cred
               mountPath: /tmp/configmap
-
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       volumes:
         - name: config-volume
           emptyDir: {}
