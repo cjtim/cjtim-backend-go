@@ -31,63 +31,14 @@ spec:
       {{- if .Values.logging.enabled }}
       initContainers:
         - name: init-config
-          image: busybox
+          image: grafana/fluent-plugin-loki:master
           args:
             - /bin/sh
             - -c
-            - cat <<EOF > /fluentd/etc/fluent.conf
             - |
-              <source>
-                @type tail
-                path /var/log/**/*.log
-                pos_file /tmp/log/fluentd-containers.log.pos
-                read_from_head false
-                tag "#{ENV['APP_NAME']}"
-                path_key file_path 
-                # add file location to "path" key
-                <parse>
-                  @type json
-                  json_parser json
-                  time_format %Y-%m-%dT%H:%M:%S.%NZ
-                </parse>
-              </source>
-
-              <filter **>
-                @type record_transformer
-                <record>
-                  pod "#{ENV['HOSTNAME']}"
-                  tag "#{ENV['APP_NAME']}"
-                </record>
-              </filter>
-
-              <filter **>
-                @type parser
-                <parse>
-                  @type json
-                  json_parser json
-                </parse>
-                replace_invalid_sequence true
-                emit_invalid_record_to_error false # send normal string if cannot parse json
-                remove_key_name_field true   # if able to parse json, remove "log"
-                key_name log                # parse "log" key
-                reserve_data true           # keep parent data
-              </filter>
-
-              <match **>
-                @type loki
-                url "https://logs-prod-us-central1.grafana.net"
-                username "#{ENV['username']}"
-                password "#{ENV['password']}"
-                extra_labels {"env":"okteto"}
-                flush_interval 10s
-                flush_at_shutdown true
-                buffer_chunk_limit 1m
-                <label>    
-                  tag
-                  pod
-                </label>
-              </match>
-            - EOF
+              mkdir -p /fluentd/etc && cat <<EOF > /fluentd/etc/fluent.conf
+              {{ .Values.logging.config | nindent 14 }}
+              EOF
           resources:
             {{- toYaml .Values.logging.resources | nindent 12 }}
           volumeMounts:
@@ -135,22 +86,22 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 30
             httpGet:
-              path: /
+              path: /health
               port: http
           readinessProbe:
             initialDelaySeconds: 10
             periodSeconds: 30
             httpGet:
-              path: /
+              path: /health
               port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           envFrom:
             - configMapRef:
-                name: cjtim-backend-go-configmap
+                name: {{ .Values.configMap.name }}
           env:
             - name: GCLOUD_CREDENTIAL
-              value: /tmp/configmap/serviceAcc.json
+              value: /tmp/configmap/{{ .Values.configMap.KEY_GCLOUD_CREDENTIAL  }}
           volumeMounts:
             - name: varlog
               mountPath: /var/log
@@ -175,4 +126,4 @@ spec:
           emptyDir: {}
         - name: gcp-cred
           configMap:
-              name: cjtim-backend-go-configmap
+              name: {{ .Values.configMap.name }}
