@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/cjtim/cjtim-backend-go/configs"
@@ -81,6 +82,7 @@ func Cronjob(c *fiber.Ctx) error {
 		return err
 	}
 
+	var wg sync.WaitGroup
 	ch := make(chan *http.Response)
 	errCh := make(chan error)
 	for _, user := range data {
@@ -93,10 +95,19 @@ func Cronjob(c *fiber.Ctx) error {
 			needNotify = (currentMinute % int(userTime)) == 0
 		}
 		if needNotify {
-			go triggerLineNotify(&user, ch, errCh)
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				triggerLineNotify(&user, ch, errCh)
+			}()
 		}
 	}
-	close(ch)
+
+	go func() {
+		defer close(ch)
+		defer close(errCh)
+		wg.Wait()
+	}()
 
 	for resp := range ch {
 		fmt.Println(resp.StatusCode)
@@ -108,7 +119,7 @@ func Cronjob(c *fiber.Ctx) error {
 	return c.SendStatus(200)
 }
 
-func triggerLineNotify(user *repository.BinanceScheama, ch chan *http.Response, errCh chan error) {
+func triggerLineNotify(user *repository.BinanceScheama, ch chan<- *http.Response, errCh chan<- error) {
 	zap.L().Info("Trigger binance line notify", zap.String("lineuid", user.LineUID))
 	resp, _, err := utils.Http(&utils.HttpReq{
 		Method: http.MethodPost,
