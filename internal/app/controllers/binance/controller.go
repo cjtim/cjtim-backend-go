@@ -2,6 +2,7 @@ package binance
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -79,6 +80,9 @@ func Cronjob(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+
+	ch := make(chan *http.Response)
+	errCh := make(chan error)
 	for _, user := range data {
 		needNotify := false
 		userTime := user.LineNotifyTime % 60
@@ -89,19 +93,34 @@ func Cronjob(c *fiber.Ctx) error {
 			needNotify = (currentMinute % int(userTime)) == 0
 		}
 		if needNotify {
-			zap.L().Info("Trigger binance line notify", zap.String("lineuid", user.LineUID))
-			resp, _, err := utils.Http(&utils.HttpReq{
-				Method: http.MethodPost,
-				URL:    configs.Config.LineNotifyURL,
-				Headers: map[string]string{
-					configs.AuthorizationHeader: configs.Config.SecretPassphrase,
-				},
-				Body: user,
-			})
-			if err != nil || resp.StatusCode != http.StatusOK {
-				zap.L().Error("Error trigger binance line notify", zap.String("lineuid", user.LineUID))
-			}
+			go triggerLineNotify(&user, ch, errCh)
 		}
 	}
+	close(ch)
+
+	for resp := range ch {
+		fmt.Println(resp.StatusCode)
+	}
+	for err := range errCh {
+		fmt.Println(err)
+	}
+
 	return c.SendStatus(200)
+}
+
+func triggerLineNotify(user *repository.BinanceScheama, ch chan *http.Response, errCh chan error) {
+	zap.L().Info("Trigger binance line notify", zap.String("lineuid", user.LineUID))
+	resp, _, err := utils.Http(&utils.HttpReq{
+		Method: http.MethodPost,
+		URL:    configs.Config.LineNotifyURL,
+		Headers: map[string]string{
+			configs.AuthorizationHeader: configs.Config.SecretPassphrase,
+		},
+		Body: user,
+	})
+	if err != nil || resp.StatusCode != http.StatusOK {
+		zap.L().Error("Error trigger binance line notify", zap.String("lineuid", user.LineUID))
+		errCh <- err
+	}
+	ch <- resp
 }
