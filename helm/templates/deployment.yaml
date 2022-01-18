@@ -47,6 +47,7 @@ spec:
       {{- end }}
 
       containers:
+        {{- if .Values.logging.enabled }}
         - name: fluentd
           image: grafana/fluent-plugin-loki:master
           envFrom:
@@ -73,6 +74,8 @@ spec:
             - name: config-volume
               mountPath: /fluentd/etc
               readOnly: true
+        {{- end }}
+
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
@@ -120,8 +123,10 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       volumes:
+        {{- if .Values.logging.enabled }}
         - name: config-volume
           emptyDir: {}
+        {{- end }}
         - name: varlog
           emptyDir: {}
         - name: gcp-cred
