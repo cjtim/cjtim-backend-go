@@ -82,8 +82,6 @@ func Cronjob(c *fiber.Ctx) error {
 	}
 
 	var wg sync.WaitGroup
-	ch := make(chan *http.Response, len(data))
-	errCh := make(chan error, len(data))
 	for _, user := range data {
 		needNotify := false
 		userTime := user.LineNotifyTime % 60
@@ -97,24 +95,17 @@ func Cronjob(c *fiber.Ctx) error {
 			wg.Add(1)
 			go func(u *repository.BinanceScheama) {
 				defer wg.Done()
-				resp, err := triggerLineNotify(u)
-				if err != nil {
-					errCh <- err
-				}
-				ch <- resp
+				triggerLineNotify(u)
 			}(&user)
 		}
 	}
 
 	wg.Wait()
-	defer close(ch)
-	defer close(errCh)
 
 	return c.SendStatus(200)
 }
 
 func triggerLineNotify(user *repository.BinanceScheama) (*http.Response, error) {
-	zap.L().Info("Trigger binance line notify", zap.String("lineuid", user.LineUID))
 	resp, _, err := utils.Http(&utils.HttpReq{
 		Method: http.MethodPost,
 		URL:    configs.Config.LineNotifyURL,
@@ -127,5 +118,6 @@ func triggerLineNotify(user *repository.BinanceScheama) (*http.Response, error) 
 		zap.L().Error("Error trigger binance line notify", zap.String("lineuid", user.LineUID))
 		return nil, err
 	}
+	zap.L().Info("Successfully trigger binance line notify", zap.String("lineuid", user.LineUID))
 	return resp, nil
 }
