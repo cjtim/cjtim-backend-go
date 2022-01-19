@@ -83,12 +83,10 @@ func Cronjob(c *fiber.Ctx) error {
 
 	var wg sync.WaitGroup
 	for _, user := range data {
-		needNotify := false
 		userTime := user.LineNotifyTime % 60
 		currentMinute := time.Now().Minute()
-		if userTime == 0 {
-			needNotify = currentMinute == int(userTime)
-		} else {
+		needNotify := currentMinute == int(userTime)
+		if userTime > 0 {
 			needNotify = (currentMinute % int(userTime)) == 0
 		}
 		if needNotify {
