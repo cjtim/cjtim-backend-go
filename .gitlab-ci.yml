@@ -121,13 +121,13 @@ review:
       --var TAG=$TAG
     - sleep 10
     - |
-      kubectl get secret loki --namespace=$CI_PROJECT_ROOT_NAMESPACE -o yaml \
-      | sed "s/namespace: $CI_PROJECT_ROOT_NAMESPACE/namespace: $OKTETO_PREVIEW_NS/" \
-      | kubectl create --namespace=$OKTETO_PREVIEW_NS -f - || true
-    - |
-      kubectl get configmap cjtim-backend-go-configmap --namespace=$CI_PROJECT_ROOT_NAMESPACE -o yaml \
-      | sed "s/namespace: $CI_PROJECT_ROOT_NAMESPACE/namespace: $OKTETO_PREVIEW_NS/" \
-      | kubectl create --namespace=$OKTETO_PREVIEW_NS -f - || true
+      clone () {
+        kubectl get $1 $2 --namespace=$CI_PROJECT_ROOT_NAMESPACE -o yaml \
+        | sed "s/namespace: $CI_PROJECT_ROOT_NAMESPACE/namespace: $OKTETO_PREVIEW_NS/" \
+        | kubectl create --namespace=$OKTETO_PREVIEW_NS -f - || true
+      }
+    - clone secret loki
+    - clone configmap cjtim-backend-go-configmap
   environment:
     name: "mr-${CI_MERGE_REQUEST_IID}-${CI_PROJECT_ROOT_NAMESPACE}"
     url: "https://cjtim-backend-go-mr-$CI_MERGE_REQUEST_IID-$CI_PROJECT_ROOT_NAMESPACE.cloud.okteto.net"

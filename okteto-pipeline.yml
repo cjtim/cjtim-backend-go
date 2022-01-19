@@ -1,2 +1,2 @@
 deploy:
-  - helm upgrade -i cjtim-backend-go helm --set image.tag=$TAG
+  - helm upgrade -i cjtim-backend-go helm --set image.tag=$TAG --set logging.enabled=${ENABLE_LOGGING:-false}
