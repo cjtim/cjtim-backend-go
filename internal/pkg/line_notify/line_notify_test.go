@@ -1,8 +1,6 @@
 package line_notify_test
 
 import (
-	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -34,9 +32,6 @@ func Test_Success(t *testing.T) {
 	// start notify microservice server
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		body, _ := ioutil.ReadAll(r.Body)
-		defer r.Body.Close()
-		fmt.Println("Mock server waiting 1sec", string(body))
 		w.WriteHeader(http.StatusOK)
 	})
 	s := httptest.NewServer(handler)
