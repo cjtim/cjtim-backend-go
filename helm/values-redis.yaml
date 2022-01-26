@@ -1,0 +1,61 @@
+redis:
+  architecture: standalone
+  auth:
+    enabled: false
+    sentinel: false
+    password: ""
+  master:
+    containerPorts:
+      redis: 6379
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+    persistence:
+      ## @param master.persistence.enabled Enable persistence on Redis&trade; master nodes using Persistent Volume Claims
+      ##
+      enabled: true
+      ## @param master.persistence.medium Provide a medium for `emptyDir` volumes.
+      ##
+      medium: ""
+      ## @param master.persistence.path The path the volume will be mounted at on Redis&trade; master containers
+      ## NOTE: Useful when using different Redis&trade; images
+      ##
+      path: /data
+      ## @param master.persistence.subPath The subdirectory of the volume to mount on Redis&trade; master containers
+      ## NOTE: Useful in dev environments
+      ##
+      subPath: ""
+      ## @param master.persistence.storageClass Persistent Volume storage class
+      ## If defined, storageClassName: <storageClass>
+      ## If set to "-", storageClassName: "", which disables dynamic provisioning
+      ## If undefined (the default) or set to null, no storageClassName spec is set, choosing the default provisioner
+      ##
+      storageClass: ""
+      ## @param master.persistence.accessModes Persistent Volume access modes
+      ##
+      accessModes:
+        - ReadWriteOnce
+      ## @param master.persistence.size Persistent Volume size
+      ##
+      size: 1Gi
+      ## @param master.persistence.annotations Additional custom annotations for the PVC
+      ##
+      annotations: {}
+      ## @param master.persistence.selector Additional labels to match for the PVC
+      ## e.g:
+      ## selector:
+      ##   matchLabels:
+      ##     app: my-app
+      ##
+      selector: {}
+      ## @param master.persistence.dataSource Custom PVC data source
+      dataSource: {}
+      ## @param master.persistence.existingClaim Use a existing PVC which must be created manually before bound
+      ## NOTE: requires master.persistence.enabled: true
+      ##
+      existingClaim: ""
+  

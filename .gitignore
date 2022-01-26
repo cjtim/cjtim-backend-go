@@ -8,3 +8,4 @@ dist/
 semantic-release
 .semrel
 main
+**/*.tgz

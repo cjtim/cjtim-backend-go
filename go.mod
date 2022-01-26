@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/storage v1.13.0
 	github.com/bwmarrin/discordgo v0.23.2
 	github.com/caarlos0/env v3.5.0+incompatible
+	github.com/go-redis/redis/v8 v8.11.4
 	github.com/gofiber/fiber/v2 v2.3.3
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/websocket v1.4.1 // indirect
