@@ -1,12 +1,15 @@
 package controller
 
 import (
+	"net/http"
+
 	"github.com/cjtim/cjtim-backend-go/internal/app/controllers/binance"
 	"github.com/cjtim/cjtim-backend-go/internal/app/controllers/files"
 	line_controllers "github.com/cjtim/cjtim-backend-go/internal/app/controllers/line"
 	"github.com/cjtim/cjtim-backend-go/internal/app/controllers/urls"
 	"github.com/cjtim/cjtim-backend-go/internal/app/controllers/users"
 	"github.com/cjtim/cjtim-backend-go/internal/app/middlewares"
+	"github.com/cjtim/cjtim-backend-go/internal/app/repository"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -60,6 +63,9 @@ func Route(r *fiber.App) {
 		return c.JSON(fiber.Map{"msg": "Hello, world"})
 	})
 	r.Get("/health", func(c *fiber.Ctx) error {
+		if repository.Health() != nil {
+			return c.SendStatus(http.StatusInternalServerError)
+		}
 		return c.SendString("pong")
 	})
 	r.Post("/line/webhook", line_controllers.Webhook)

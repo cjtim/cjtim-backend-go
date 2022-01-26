@@ -2,7 +2,9 @@ package repository
 
 import (
 	"context"
+	"sync"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -26,6 +28,7 @@ type Repository interface {
 	CountDocuments(ctx context.Context, filter interface{}, opts ...*options.CountOptions) (int64, error)
 	UpdateOne(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (int64, error)
 	DeleteOne(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (int64, error)
+	Health() error
 }
 
 type RepoImpl struct {
@@ -44,6 +47,38 @@ func RestoreRepoMock() {
 	FileRepo = &RepoImpl{}
 	UrlRepo = &RepoImpl{}
 	UserRepo = &RepoImpl{}
+}
+
+func Health() error {
+	var wg sync.WaitGroup
+	errs := []error{}
+	all := []func() error{
+		BinanceRepo.Health,
+		FileRepo.Health,
+		UrlRepo.Health,
+		UserRepo.Health,
+	}
+	for _, check := range all {
+		wg.Add(1)
+		go func(c func() error) {
+			defer wg.Done()
+			errs = append(errs, c())
+		}(check)
+	}
+	go func() {
+		wg.Wait()
+	}()
+	for _, err := range errs {
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *RepoImpl) Health() error {
+	_, err := r.col.CountDocuments(context.Background(), bson.M{})
+	return err
 }
 
 func (r *RepoImpl) FindOne(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {

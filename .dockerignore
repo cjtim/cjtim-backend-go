@@ -1,0 +1,11 @@
+**/go_test
+**/.env
+**/serviceAcc.json
+**/configmap.*
+**/log
+dist/
+**/coverage.*
+semantic-release
+.semrel
+main
+**/*.tgz

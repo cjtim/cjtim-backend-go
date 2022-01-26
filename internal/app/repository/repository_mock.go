@@ -16,6 +16,11 @@ type Mock_Repository struct {
 	M_CountDocuments    func(ctx context.Context, filter interface{}, opts ...*options.CountOptions) (int64, error)
 	M_UpdateOne         func(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (int64, error)
 	M_DeleteOne         func(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (int64, error)
+	M_Health            func() error
+}
+
+func (r *Mock_Repository) Health() error {
+	return r.M_Health()
 }
 
 func (r *Mock_Repository) FindOne(data interface{}, filter interface{}, opts ...*options.FindOneOptions) error {

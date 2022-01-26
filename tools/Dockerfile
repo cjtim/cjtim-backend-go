@@ -1,14 +1,17 @@
-FROM golang:1.16 as builder
+FROM golang:1.17-alpine as builder
 WORKDIR $GOPATH/src/github.com/cjtim/cjtim-backend-go
-COPY . .
+COPY go.mod go.mod
+COPY go.sum go.sum
 
 # Using go get.
-RUN go get -d -v
+# RUN go mod download
 
 # Using go mod.
-# RUN go mod download
-# RUN go mod verify
+RUN go mod download
+RUN go mod verify
+
 # Build the binary.
+COPY . .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
     go build -o main cmd/cjtim-backend-go/main.go
 
