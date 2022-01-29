@@ -7,5 +7,4 @@ dist/
 **/coverage.*
 semantic-release
 .semrel
-main
 **/*.tgz
