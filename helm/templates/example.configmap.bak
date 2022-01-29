@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "charts.fullname" . }}-configmap
+data:
+  AIR_API_KEY: ""
+  DISCORD_ERROR_CHANNEL: ""
+  DISCORD_SERVER_ID: ""
+  DISCORD_TOKEN: ""
+  GCLOUD_BUCKET_NAME: ""
+  GCLOUD_PROJECT_ID: ""
+  LINE_CHANNEL_ACCESS_TOKEN: ""
+  LINE_CHANNEL_SECRET: ""
+  MICROSERVICE_BINANCE_LINE_NOTIFY_URL: ""
+  MONGO_DB: ""
+  MONGO_URI: ""
+  REBRANDLY_API: ""
+  REBRANDLY_WORDSPACE: ""
+  SECRET_PASSPHRASE: ""
+  serviceAcc.json: |
+    {
+      "type": "service_account",
+      "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+      "token_uri": "https://oauth2.googleapis.com/token",
+      "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    }

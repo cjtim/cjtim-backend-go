@@ -83,7 +83,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
-              containerPort: 8080
+              containerPort: {{ .Values.service.port }}
               protocol: TCP
           livenessProbe:
             initialDelaySeconds: 10
@@ -104,7 +104,9 @@ spec:
                 name: {{ .Values.configMap.name }}
           env:
             - name: GCLOUD_CREDENTIAL
-              value: /tmp/configmap/{{ .Values.configMap.KEY_GCLOUD_CREDENTIAL  }}
+              value: /tmp/configmap/{{ .Values.configMap.KEY_GCLOUD_CREDENTIAL }}
+            - name: PORT
+              value: {{ .Values.service.port | quote }}
           volumeMounts:
             - name: varlog
               mountPath: /var/log

@@ -1,5 +1,4 @@
 redis:
-  architecture: standalone
   auth:
     enabled: false
     sentinel: false
@@ -8,12 +7,8 @@ redis:
     containerPorts:
       redis: 6379
     resources:
-      limits:
-        cpu: 500m
-        memory: 512Mi
-      requests:
-        cpu: 250m
-        memory: 256Mi
+      limits: {}
+      requests: {}
     persistence:
       ## @param master.persistence.enabled Enable persistence on Redis&trade; master nodes using Persistent Volume Claims
       ##
@@ -41,7 +36,7 @@ redis:
         - ReadWriteOnce
       ## @param master.persistence.size Persistent Volume size
       ##
-      size: 1Gi
+      size: 512Mi
       ## @param master.persistence.annotations Additional custom annotations for the PVC
       ##
       annotations: {}
@@ -58,4 +53,52 @@ redis:
       ## NOTE: requires master.persistence.enabled: true
       ##
       existingClaim: ""
-  
+  replica:
+    replicaCount: 2
+    resources:
+      limits:
+        cpu: 250m
+        memory: 256Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+    persistence:
+      ## @param replica.persistence.enabled Enable persistence on Redis&trade; replicas nodes using Persistent Volume Claims
+      ##
+      enabled: true
+      ## @param replica.persistence.medium Provide a medium for `emptyDir` volumes.
+      ##
+      medium: ""
+      ## @param replica.persistence.path The path the volume will be mounted at on Redis&trade; replicas containers
+      ## NOTE: Useful when using different Redis&trade; images
+      ##
+      path: /data
+      ## @param replica.persistence.subPath The subdirectory of the volume to mount on Redis&trade; replicas containers
+      ## NOTE: Useful in dev environments
+      ##
+      subPath: ""
+      ## @param replica.persistence.storageClass Persistent Volume storage class
+      ## If defined, storageClassName: <storageClass>
+      ## If set to "-", storageClassName: "", which disables dynamic provisioning
+      ## If undefined (the default) or set to null, no storageClassName spec is set, choosing the default provisioner
+      ##
+      storageClass: ""
+      ## @param replica.persistence.accessModes Persistent Volume access modes
+      ##
+      accessModes:
+        - ReadWriteOnce
+      ## @param replica.persistence.size Persistent Volume size
+      ##
+      size: 512Mi
+      ## @param replica.persistence.annotations Additional custom annotations for the PVC
+      ##
+      annotations: {}
+      ## @param replica.persistence.selector Additional labels to match for the PVC
+      ## e.g:
+      ## selector:
+      ##   matchLabels:
+      ##     app: my-app
+      ##
+      selector: {}
+      ## @param replica.persistence.dataSource Custom PVC data source
+      dataSource: {}
