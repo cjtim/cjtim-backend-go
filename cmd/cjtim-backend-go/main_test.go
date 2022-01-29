@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/cjtim/cjtim-backend-go/internal/app/repository"
 	"github.com/gofiber/fiber/v2/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -27,6 +28,17 @@ func Test_Route_Home(t *testing.T) {
 
 func Test_Route_Ping(t *testing.T) {
 	app := startServer()
+
+	// Mock
+	mock := repository.Mock_Repository{}
+	mock.M_Health = func() error {
+		return nil
+	}
+	repository.BinanceRepo = &mock
+	repository.FileRepo = &mock
+	repository.UrlRepo = &mock
+	repository.UserRepo = &mock
+	defer repository.RestoreRepoMock()
 
 	resp, err := app.Test(httptest.NewRequest("GET", "/health", nil))
 	utils.AssertEqual(t, nil, err, "is error?")
