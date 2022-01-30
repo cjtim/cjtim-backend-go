@@ -106,6 +106,9 @@ build-container-okteto:
 
 review:
   stage: review
+  rules:
+    - if: "$CI_PIPELINE_SOURCE == 'merge_request_event'"
+    - if: "$CI_PIPELINE_SOURCE == 'web'"
   needs:
     - build-container-okteto
   image: okteto/okteto:1.13.4
@@ -133,8 +136,6 @@ review:
     name: "mr-${CI_MERGE_REQUEST_IID}-${CI_PROJECT_ROOT_NAMESPACE}"
     url: "https://cjtim-backend-go-mr-$CI_MERGE_REQUEST_IID-$CI_PROJECT_ROOT_NAMESPACE.cloud.okteto.net"
     on_stop: stop-review
-  only:
-    - merge_requests
 
 stop-review:
   stage: review
