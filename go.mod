@@ -9,6 +9,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.3.3
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/websocket v1.4.1 // indirect
+	github.com/hashicorp/vault/api v1.4.1 // indirect
 	github.com/joho/godotenv v1.3.0
 	github.com/line/line-bot-sdk-go v7.7.0+incompatible
 	github.com/stretchr/testify v1.7.0
