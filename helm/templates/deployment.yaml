@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: {{ include "charts.fullname" . }}
   labels:
-    {{- include "charts.labels" . | nindent 4 }}
+    {{ include "charts.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
@@ -44,6 +44,20 @@ spec:
           volumeMounts:
             - name: config-volume
               mountPath: /fluentd/etc
+        - name: init-config-firebeat
+          image: busybox
+          args:
+            - /bin/sh
+            - -c
+            - |
+              mkdir -p /usr/share/filebeat && cat <<EOF > /usr/share/filebeat/filebeat.yml
+              {{ toYaml .Values.logging.filebeat | nindent 14 }}
+              EOF
+          resources:
+            {{- toYaml .Values.logging.resources | nindent 12 }}
+          volumeMounts:
+            - name: filebeat-config
+              mountPath: /usr/share/filebeat
       {{- end }}
 
       containers:
@@ -74,6 +88,17 @@ spec:
             - name: config-volume
               mountPath: /fluentd/etc
               readOnly: true
+        - name: filebeat-sidecar
+          image: elastic/filebeat:6.5.4
+          volumeMounts:
+            - name: varlog
+              mountPath: /var/log
+              readOnly: true
+            - name: filebeat-config
+              mountPath: /usr/share/filebeat/filebeat.yml
+              subPath: filebeat.yaml
+          resources:
+            {{- toYaml .Values.logging.resources | nindent 12 }}
         {{- end }}
 
         - name: {{ .Chart.Name }}
@@ -125,6 +150,8 @@ spec:
       volumes:
         {{- if .Values.logging.enabled }}
         - name: config-volume
+          emptyDir: {}
+        - name: filebeat-config
           emptyDir: {}
         {{- end }}
         - name: varlog

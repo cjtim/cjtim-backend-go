@@ -147,3 +147,19 @@ logging:
         pod
       </label>
     </match>
+  
+  filebeat:
+    filebeat.inputs:
+      - type: log
+        enabled: true
+        paths:
+          - /var/log/**/*.log
+        fields:
+          component: cjtim-backend-go
+          logtype: app
+        fields_under_root: true
+    output:
+      elasticsearch:
+        hosts: 
+          - "elasticsearch-master.es-cjtim:9200"
+        index: "%{[fields.component]}-%{[fields.log_type]}-%{+yyyy.MM.dd}"
