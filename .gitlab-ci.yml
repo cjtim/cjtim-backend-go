@@ -127,6 +127,7 @@ review:
         | kubectl create --namespace=$OKTETO_PREVIEW_NS -f - || true
       }
     - clone secret loki
+    - clone secret cjtim-backend-go-vault-token
     - clone configmap cjtim-backend-go-configmap
   environment:
     name: "mr-${CI_MERGE_REQUEST_IID}-${CI_PROJECT_ROOT_NAMESPACE}"

@@ -128,8 +128,11 @@ spec:
             - configMapRef:
                 name: {{ .Values.configMap.name }}
           env:
-            - name: GCLOUD_CREDENTIAL
-              value: /tmp/configmap/{{ .Values.configMap.KEY_GCLOUD_CREDENTIAL  }}
+            - name: VAULT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Chart.Name }}-vault-token
+                  key: token
           volumeMounts:
             - name: varlog
               mountPath: /var/log

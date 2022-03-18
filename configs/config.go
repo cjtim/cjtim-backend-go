@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/caarlos0/env"
+	"github.com/hashicorp/vault/api"
 	"github.com/joho/godotenv"
 )
 
@@ -49,6 +50,8 @@ func init() {
 	}
 	defer fp.Close()
 
+	readVault()
+
 	cfg := ConfigType{}
 	_ = godotenv.Load()
 	err = env.Parse(&cfg)
@@ -61,4 +64,35 @@ func init() {
 
 func RestoreConfigMock() {
 	Config = &origConfig
+}
+
+// readVault - Secret import
+func readVault() error {
+	vaultToken := os.Getenv("VAULT_TOKEN")
+	secretPath := os.Getenv("VAULT_PATH")
+	if vaultToken == "" {
+		return nil
+	}
+
+	client, err := api.NewClient(&api.Config{
+		Address: os.Getenv("VAULT_ADDR"),
+	})
+	if err != nil {
+		return err
+	}
+	client.SetToken(vaultToken)
+	client.Auth().Token().RenewSelf(768 * 3600) // renew 768hr
+
+	secret, err := client.Logical().Read(secretPath)
+	if err != nil {
+		return err
+	}
+	if secret == nil {
+		return nil
+	}
+	data := secret.Data["data"].(map[string]interface{})
+	for k, v := range data {
+		os.Setenv(k, v.(string))
+	}
+	return nil
 }

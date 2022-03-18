@@ -1,12 +1,16 @@
 package controller
 
 import (
+	"context"
+	"net/http"
+
 	"github.com/cjtim/cjtim-backend-go/internal/app/controllers/binance"
 	"github.com/cjtim/cjtim-backend-go/internal/app/controllers/files"
 	line_controllers "github.com/cjtim/cjtim-backend-go/internal/app/controllers/line"
 	"github.com/cjtim/cjtim-backend-go/internal/app/controllers/urls"
 	"github.com/cjtim/cjtim-backend-go/internal/app/controllers/users"
 	"github.com/cjtim/cjtim-backend-go/internal/app/middlewares"
+	"github.com/cjtim/cjtim-backend-go/internal/app/repository"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -60,7 +64,11 @@ func Route(r *fiber.App) {
 		return c.JSON(fiber.Map{"msg": "Hello, world"})
 	})
 	r.Get("/health", func(c *fiber.Ctx) error {
-		return c.SendString("pong")
+		err := repository.Client.GetClient().Ping(context.TODO(), nil)
+		if err == nil {
+			return c.SendString("pong")
+		}
+		return c.SendStatus(http.StatusInternalServerError)
 	})
 	r.Post("/line/webhook", line_controllers.Webhook)
 	r.Get("/line/weatherBroadcast", middlewares.InternalAuth, line_controllers.WeatherBroadcast)

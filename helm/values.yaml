@@ -14,7 +14,6 @@ image:
 
 configMap:
   name: cjtim-backend-go-configmap
-  KEY_GCLOUD_CREDENTIAL: serviceAcc.json
 
 imagePullSecrets: []
 nameOverride: ""
