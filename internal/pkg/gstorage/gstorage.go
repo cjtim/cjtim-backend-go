@@ -25,7 +25,7 @@ type c struct {
 func GetClient() (*c, error) {
 	var client, err = storage.NewClient(
 		context.TODO(),
-		option.WithCredentialsFile(configs.Config.GCLOUD_CREDENTIAL),
+		option.WithCredentialsJSON([]byte(configs.Config.GCLOUD_CREDENTIAL)),
 	)
 	if err != nil {
 		log.Fatalf("Failed to create client: %v", err)
