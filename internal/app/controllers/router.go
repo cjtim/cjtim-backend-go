@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/cjtim/cjtim-backend-go/internal/app/controllers/binance"
@@ -64,7 +63,7 @@ func Route(r *fiber.App) {
 		return c.JSON(fiber.Map{"msg": "Hello, world"})
 	})
 	r.Get("/health", func(c *fiber.Ctx) error {
-		err := repository.Client.GetClient().Ping(context.TODO(), nil)
+		err := repository.Client.Ping()
 		if err == nil {
 			return c.SendString("pong")
 		}

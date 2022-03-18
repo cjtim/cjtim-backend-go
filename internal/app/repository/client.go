@@ -14,6 +14,7 @@ type IClient interface {
 	Disconnect() error
 	GetDatabase() *mongo.Database
 	GetClient() *mongo.Client
+	Ping() error
 }
 
 type ClientImpl struct {
@@ -67,4 +68,8 @@ func (r *ClientImpl) GetDatabase() *mongo.Database {
 
 func (r *ClientImpl) GetClient() *mongo.Client {
 	return r.mongoClient
+}
+
+func (r *ClientImpl) Ping() error {
+	return r.mongoClient.Ping(context.TODO(), nil)
 }
