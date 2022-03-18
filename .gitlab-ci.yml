@@ -63,7 +63,7 @@ test:
     - .go
     - .master-and-mr-rules
   variables:
-    GO_IMAGE: golang:1.16
+    GO_IMAGE: golang:1.17.6
   script:
     - go get gotest.tools/gotestsum
     - go get github.com/boumenot/gocover-cobertura
