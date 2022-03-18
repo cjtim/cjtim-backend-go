@@ -12,7 +12,7 @@ RUN go get -d -v
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
     go build -o main cmd/cjtim-backend-go/main.go
 
-FROM alpine:latest  
+FROM alpine:3.15  
 RUN apk update && \
     apk add --no-cache ca-certificates
 WORKDIR /root/
