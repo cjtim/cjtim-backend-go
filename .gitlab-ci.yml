@@ -27,12 +27,6 @@ variables:
 
     GO_IMAGE: golang:1.17.6-alpine
     GOPATH: /go
-  # cache:
-  #   key: ${CI_COMMIT_REF_NAME}
-  #   when: on_success
-  #   paths:
-  #     - $GOPATH
-  #     - $CI_PROJECT_DIR/vendor
   before_script:
     - go mod download
 
@@ -95,13 +89,22 @@ build-container-okteto:
   image: docker:19
   services:
     - docker:19-dind
+  variables:
+    PLATFORM: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6
   script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build -t $DOCKER_IMAGE_TAG:$TAG -f tools/ci.Dockerfile .
-    - docker push $DOCKER_IMAGE_TAG:$TAG
+
+    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+    - docker buildx create --use
+
+    - |
+      docker buildx build --push \
+      -t ${DOCKER_IMAGE_TAG}:${TAG} \
+      --platform ${PLATFORM} \
+      -f tools/Dockerfile .
+
     - docker logout $CI_REGISTRY
-  needs:
-    - compile
+  needs: []
 
 review:
   stage: review

@@ -15,7 +15,6 @@ builds:
     goos:
       - windows
     goarch:
-      - "386"
       - amd64
     main: cmd/cjtim-backend-go/main.go
 
@@ -26,9 +25,9 @@ builds:
       - linux
       - darwin
     goarch:
-      - "386"
+      # - "386"
       - amd64
-      - arm
+      # - arm
       - arm64
     main: cmd/cjtim-backend-go/main.go
 
