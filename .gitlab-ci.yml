@@ -86,15 +86,13 @@ build-container-okteto:
   stage: build-container
   extends:
     - .master-and-mr-rules
-  image: docker:19
+  image: jdrouet/docker-with-buildx:20.10.14-0.8.1
   services:
-    - docker:19-dind
+    - docker:20.10-dind
   variables:
     PLATFORM: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6
   script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-
-    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
     - docker buildx create --use
 
     - |
