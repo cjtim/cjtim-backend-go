@@ -16,7 +16,9 @@ RUN go build -o main cmd/cjtim-backend-go/main.go
 
 FROM alpine:latest  
 RUN apk update && \
-    apk add --no-cache ca-certificates
+    apk add --no-cache \
+    ca-certificates \
+    libc6-compat
 WORKDIR /root/
 COPY --from=builder /go/src/github.com/cjtim/cjtim-backend-go .
 EXPOSE 8080

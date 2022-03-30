@@ -1,5 +1,4 @@
 stages:
-  - compile
   - test
   - build-container
   - review
@@ -34,21 +33,6 @@ variables:
   rules:
     - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
     - if: "$CI_PIPELINE_SOURCE == 'merge_request_event'"
-
-compile:
-  stage: compile
-  extends:
-    - .go
-    - .master-and-mr-rules
-  variables:
-    OUTPUT_FILE: main
-    MAIN_GO: cmd/cjtim-backend-go/main.go
-  script:
-    - go build -o $OUTPUT_FILE $MAIN_GO
-  artifacts:
-    expire_in: 7 days
-    paths:
-      - $OUTPUT_FILE
 
 test:
   stage: test
@@ -90,7 +74,8 @@ build-container-okteto:
   services:
     - docker:20.10-dind
   variables:
-    PLATFORM: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6
+    # PLATFORM: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6
+    PLATFORM: linux/amd64,linux/arm64
   script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker buildx create --use
