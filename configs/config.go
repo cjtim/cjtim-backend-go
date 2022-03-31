@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/caarlos0/env"
-	"github.com/hashicorp/vault/api"
 	"github.com/joho/godotenv"
 	"github.com/robfig/cron/v3"
 )
@@ -55,22 +54,13 @@ func init() {
 	client, err := newVault()
 	if err != nil {
 		log.Default().Println("Vault secret error:", err.Error())
-		return
 	}
-
-	loadEnv(client)
-
-	c := cron.New()
-	c.AddFunc("* * * * *", cronVault(client))
-	c.Start()
-
-}
-
-func loadEnv(client *api.Client) {
-	log.Default().Println("Loading Vault secret...")
-	err := readVault(client)
-	if err != nil {
-		log.Default().Println("Vault secret error:", err.Error())
+	if client != nil {
+		log.Default().Println("Loading Vault secret...")
+		err := client.readVault()
+		if err != nil {
+			log.Default().Println("Vault secret error:", err.Error())
+		}
 	}
 
 	cfg := ConfigType{}
@@ -81,6 +71,11 @@ func loadEnv(client *api.Client) {
 	}
 	Config = &cfg
 	origConfig = cfg
+
+	c := cron.New()
+	c.AddFunc("* * * * *", client.cronVault())
+	c.Start()
+
 }
 
 func RestoreConfigMock() {

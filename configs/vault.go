@@ -10,7 +10,11 @@ import (
 	"go.uber.org/zap"
 )
 
-func newVault() (*api.Client, error) {
+type Vault struct {
+	client *api.Client
+}
+
+func newVault() (*Vault, error) {
 	vaultToken := os.Getenv("VAULT_TOKEN")
 	vaultAddr := os.Getenv("VAULT_ADDR")
 	vaultPath := os.Getenv("VAULT_PATH")
@@ -22,13 +26,15 @@ func newVault() (*api.Client, error) {
 	})
 	client.SetToken(vaultToken)
 	client.Auth().Token().RenewSelf(768 * 3600) // renew 768hr
-	return client, err
+	return &Vault{
+		client: client,
+	}, err
 }
 
 // readVault - Secret import
-func readVault(client *api.Client) error {
+func (v *Vault) readVault() error {
 	secretPath := os.Getenv("VAULT_PATH")
-	secret, err := client.Logical().Read(secretPath)
+	secret, err := v.client.Logical().Read(secretPath)
 	if err != nil {
 		return err
 	}
@@ -49,11 +55,11 @@ func readVault(client *api.Client) error {
 	return nil
 }
 
-func cronVault(client *api.Client) func() {
+func (v *Vault) cronVault() func() {
 	return func() {
 		zap.L().Info("vault checking new secret...")
 		oldVersion := secretVersion
-		err := readVault(client)
+		err := v.readVault()
 		if err != nil {
 			log.Default().Println("Vault secret error:", err.Error())
 			return

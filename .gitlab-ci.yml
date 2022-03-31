@@ -5,8 +5,12 @@ stages:
   - deploy
   - release
 
+default:
+  interruptible: true
+  timeout: 20m
+
 variables:
-  DOCKER_HOST: tcp://docker:2375/
+  DOCKER_HOST: tcp://docker:2375
   DOCKER_DRIVER: overlay2
 
   REPO_NAME: gitlab.com/$CI_PROJECT_PATH
