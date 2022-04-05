@@ -5,14 +5,15 @@ import (
 	"os"
 
 	"github.com/caarlos0/env"
-	"github.com/hashicorp/vault/api"
 	"github.com/joho/godotenv"
+	"github.com/robfig/cron/v3"
 )
 
 var (
 	AuthorizationHeader = "Authorization"
 	Config              *ConfigType
 	origConfig          ConfigType
+	secretVersion       int64 = 0
 )
 
 type ConfigType struct {
@@ -50,7 +51,17 @@ func init() {
 	}
 	defer fp.Close()
 
-	readVault()
+	client, err := newVault()
+	if err != nil {
+		log.Default().Println("Vault secret error:", err.Error())
+	}
+	if client != nil {
+		log.Default().Println("Loading Vault secret...")
+		err := client.readVault()
+		if err != nil {
+			log.Default().Println("Vault secret error:", err.Error())
+		}
+	}
 
 	cfg := ConfigType{}
 	_ = godotenv.Load()
@@ -60,39 +71,13 @@ func init() {
 	}
 	Config = &cfg
 	origConfig = cfg
+
+	c := cron.New()
+	c.AddFunc("* * * * *", client.cronVault())
+	c.Start()
+
 }
 
 func RestoreConfigMock() {
 	Config = &origConfig
-}
-
-// readVault - Secret import
-func readVault() error {
-	vaultToken := os.Getenv("VAULT_TOKEN")
-	secretPath := os.Getenv("VAULT_PATH")
-	if vaultToken == "" {
-		return nil
-	}
-
-	client, err := api.NewClient(&api.Config{
-		Address: os.Getenv("VAULT_ADDR"),
-	})
-	if err != nil {
-		return err
-	}
-	client.SetToken(vaultToken)
-	client.Auth().Token().RenewSelf(768 * 3600) // renew 768hr
-
-	secret, err := client.Logical().Read(secretPath)
-	if err != nil {
-		return err
-	}
-	if secret == nil {
-		return nil
-	}
-	data := secret.Data["data"].(map[string]interface{})
-	for k, v := range data {
-		os.Setenv(k, v.(string))
-	}
-	return nil
 }
