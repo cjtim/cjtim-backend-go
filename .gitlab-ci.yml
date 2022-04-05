@@ -1,13 +1,16 @@
 stages:
-  - compile
   - test
   - build-container
   - review
   - deploy
   - release
 
+default:
+  interruptible: true
+  timeout: 20m
+
 variables:
-  DOCKER_HOST: tcp://docker:2375/
+  DOCKER_HOST: tcp://docker:2375
   DOCKER_DRIVER: overlay2
 
   REPO_NAME: gitlab.com/$CI_PROJECT_PATH
@@ -27,12 +30,6 @@ variables:
 
     GO_IMAGE: golang:1.17.6-alpine
     GOPATH: /go
-  # cache:
-  #   key: ${CI_COMMIT_REF_NAME}
-  #   when: on_success
-  #   paths:
-  #     - $GOPATH
-  #     - $CI_PROJECT_DIR/vendor
   before_script:
     - go mod download
 
@@ -40,21 +37,6 @@ variables:
   rules:
     - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
     - if: "$CI_PIPELINE_SOURCE == 'merge_request_event'"
-
-compile:
-  stage: compile
-  extends:
-    - .go
-    - .master-and-mr-rules
-  variables:
-    OUTPUT_FILE: main
-    MAIN_GO: cmd/cjtim-backend-go/main.go
-  script:
-    - go build -o $OUTPUT_FILE $MAIN_GO
-  artifacts:
-    expire_in: 7 days
-    paths:
-      - $OUTPUT_FILE
 
 test:
   stage: test
@@ -92,16 +74,24 @@ build-container-okteto:
   stage: build-container
   extends:
     - .master-and-mr-rules
-  image: docker:19
+  image: jdrouet/docker-with-buildx:20.10.14-0.8.1
   services:
-    - docker:19-dind
+    - docker:20.10-dind
+  variables:
+    # PLATFORM: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6
+    PLATFORM: linux/amd64,linux/arm64
   script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build -t $DOCKER_IMAGE_TAG:$TAG -f tools/ci.Dockerfile .
-    - docker push $DOCKER_IMAGE_TAG:$TAG
+    - docker buildx create --use
+
+    - |
+      docker buildx build --push \
+      -t ${DOCKER_IMAGE_TAG}:${TAG} \
+      --platform ${PLATFORM} \
+      -f tools/Dockerfile .
+
     - docker logout $CI_REGISTRY
-  needs:
-    - compile
+  needs: []
 
 review:
   stage: review
