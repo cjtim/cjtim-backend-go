@@ -6,7 +6,6 @@ import (
 
 	"github.com/caarlos0/env"
 	"github.com/joho/godotenv"
-	"github.com/robfig/cron/v3"
 )
 
 var (
@@ -51,31 +50,18 @@ func init() {
 	}
 	defer fp.Close()
 
-	client, err := newVault()
-	if err != nil {
-		log.Default().Println("Vault secret error:", err.Error())
-	}
-	if client != nil {
-		log.Default().Println("Loading Vault secret...")
-		err := client.readVault()
-		if err != nil {
-			log.Default().Println("Vault secret error:", err.Error())
-		}
-	}
-
 	cfg := ConfigType{}
-	_ = godotenv.Load()
+	envFile := os.Getenv("DOTENV_FILE")
+	if envFile == "" {
+		envFile = ".env"
+	}
+	_ = godotenv.Load(envFile)
 	err = env.Parse(&cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
 	Config = &cfg
 	origConfig = cfg
-
-	c := cron.New()
-	c.AddFunc("* * * * *", client.cronVault())
-	c.Start()
-
 }
 
 func RestoreConfigMock() {

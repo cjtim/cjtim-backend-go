@@ -2,7 +2,7 @@ stages:
   - test
   - build-container
   - review
-  - deploy
+  # - deploy
   - release
 
 default:
@@ -142,17 +142,17 @@ stop-review:
   only:
     - merge_requests
 
-okteto:
-  stage: deploy
-  needs:
-    - build-container-okteto
-  image: okteto/okteto:1.13.4
-  script:
-    - export OKTETO_TOKEN=$(echo $OKTETO_TOKEN | base64 -d)
-    - okteto namespace
-    - helm upgrade -i cjtim-backend-go helm --set image.tag=$TAG
-  rules:
-    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+# okteto:
+#   stage: deploy
+#   needs:
+#     - build-container-okteto
+#   image: okteto/okteto:1.13.4
+#   script:
+#     - export OKTETO_TOKEN=$(echo $OKTETO_TOKEN | base64 -d)
+#     - okteto namespace
+#     - helm upgrade -i cjtim-backend-go helm --set image.tag=$TAG
+#   rules:
+#     - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
 
 release-tag:
   stage: release
@@ -164,6 +164,19 @@ release-tag:
     entrypoint: [""]
   script:
     - /usr/local/bin/semantic-release || true
+
+release-helm:
+  stage: release
+  only:
+    - tags
+  image: dtzar/helm-kubectl
+  before_script:
+    - 'helm repo add --username gitlab-ci-token --password ${CI_JOB_TOKEN} ${CI_PROJECT_NAME} ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/stable'
+  script:
+    - 'helm plugin install https://github.com/chartmuseum/helm-push.git'
+    - "sed -i \"/version:.*/c\version: ${CI_COMMIT_TAG}\" helm/Chart.yaml"
+    - helm package helm
+    - 'helm push ./cjtim-backend-go-${CI_COMMIT_TAG}.tgz ${CI_PROJECT_NAME}'
 
 release:
   stage: release

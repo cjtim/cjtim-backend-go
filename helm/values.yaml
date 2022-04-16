@@ -2,8 +2,6 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-namespace: cjtim
-
 replicaCount: 1
 
 image:
@@ -12,8 +10,18 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
-configMap:
-  name: cjtim-backend-go-configmap
+envFrom:
+  - configMapRef:
+      name: "cjtim-backend-go-configmap"
+
+volumeMounts:
+  - name: &gcp-cred gcp-cred
+    mountPath: /tmp/configmap
+
+volumes:
+  - name: *gcp-cred
+    configMap:
+      name: "cjtim-backend-go-configmap"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -21,12 +29,12 @@ fullnameOverride: ""
 
 serviceAccount:
   # Specifies whether a service account should be created
-  create: false
+  create: true
   # Annotations to add to the service account
   annotations: {}
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
-  name: ""
+  name: "cjtim-backend-serviceacc"
 
 podAnnotations: {}
 
@@ -43,7 +51,7 @@ securityContext:
   # runAsUser: 1000
 
 service:
-  type: LoadBalancer
+  type: ClusterIP
   port: 80
 
 ingress:
@@ -65,15 +73,11 @@ ingress:
   #      - chart-example.local
 
 resources:
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
   limits:
-    cpu: 500m
+    cpu: 100m
     memory: 256Mi
   requests:
-    cpu: 100m
+    cpu: 50m
     memory: 128Mi
 
 autoscaling:
@@ -90,7 +94,7 @@ tolerations: []
 affinity: {}
 
 logging:
-  enabled: true
+  enabled: false
   resources:
     limits:
       cpu: 100m
