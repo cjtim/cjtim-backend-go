@@ -129,8 +129,7 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           envFrom:
-            - configMapRef:
-                name: {{ .Values.configMap.name }}
+            {{- toYaml .Values.envFrom | nindent 12 }}
           env:
             - name: VAULT_TOKEN
               valueFrom:
@@ -140,8 +139,7 @@ spec:
           volumeMounts:
             - name: varlog
               mountPath: /var/log
-            - name: gcp-cred
-              mountPath: /tmp/configmap
+            {{- toYaml .Values.volumeMounts | nindent 12 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -165,6 +163,4 @@ spec:
         {{- end }}
         - name: varlog
           emptyDir: {}
-        - name: gcp-cred
-          configMap:
-              name: {{ .Values.configMap.name }}
+        {{- toYaml .Values.volumes | nindent 8 }}
