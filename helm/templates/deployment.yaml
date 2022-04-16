@@ -130,16 +130,16 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           envFrom:
             {{- toYaml .Values.envFrom | nindent 12 }}
+          {{- with .Values.extraEnvs }}
           env:
-            - name: VAULT_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Chart.Name }}-vault-token
-                  key: token
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: varlog
               mountPath: /var/log
-            {{- toYaml .Values.volumeMounts | nindent 12 }}
+            {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -163,4 +163,6 @@ spec:
         {{- end }}
         - name: varlog
           emptyDir: {}
-        {{- toYaml .Values.volumes | nindent 8 }}
+        {{- with .Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}

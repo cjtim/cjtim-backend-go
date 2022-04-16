@@ -72,13 +72,15 @@ test:
 
 build-container-okteto:
   stage: build-container
-  extends:
-    - .master-and-mr-rules
+  rules:
+    - if: "$CI_PIPELINE_SOURCE == 'merge_request_event'"
+    - if: $CI_COMMIT_TAG
+      variables:
+        TAG: ${CI_COMMIT_TAG}
   image: jdrouet/docker-with-buildx:20.10.14-0.8.1
   services:
     - docker:20.10-dind
   variables:
-    # PLATFORM: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6
     PLATFORM: linux/amd64,linux/arm64
   script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
@@ -174,9 +176,10 @@ release-helm:
     - 'helm repo add --username gitlab-ci-token --password ${CI_JOB_TOKEN} ${CI_PROJECT_NAME} ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/stable'
   script:
     - 'helm plugin install https://github.com/chartmuseum/helm-push.git'
-    - "sed -i \"/version:.*/c\version: ${CI_COMMIT_TAG}\" helm/Chart.yaml"
+    - "sed -i \"s/version:.*/version: ${CI_COMMIT_TAG}/\" helm/Chart.yaml"
     - helm package helm
     - 'helm push ./cjtim-backend-go-${CI_COMMIT_TAG}.tgz ${CI_PROJECT_NAME}'
+  needs: []
 
 release:
   stage: release

@@ -10,18 +10,14 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
-envFrom:
-  - configMapRef:
-      name: "cjtim-backend-go-configmap"
+envFrom: []
 
-volumeMounts:
-  - name: &gcp-cred gcp-cred
-    mountPath: /tmp/configmap
+extraEnvs: []
 
-volumes:
-  - name: *gcp-cred
-    configMap:
-      name: "cjtim-backend-go-configmap"
+volumeMounts: []
+
+volumes: []
+
 
 imagePullSecrets: []
 nameOverride: ""
