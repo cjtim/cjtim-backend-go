@@ -41,27 +41,42 @@ func Webhook(c *fiber.Ctx) error {
 			}
 			err = line.Reply(event.ReplyToken, []interface{}{line.WeatherFlexMessage(weatherData)})
 			if err != nil {
-				zap.L().Error("Line webhook error", zap.String("event", "location"), zap.Error(err))
+				zap.L().Error("Line webhook error - reply", zap.String("event", "location"), zap.Error(err))
 			}
 			return err
 		case "file":
 			message := event.Message.(*linebot.FileMessage)
-			_, err = files.Client.AddFromLine(message.ID, event.Source.UserID)
-			if err != nil {
-				zap.L().Error("Line webhook error", zap.String("event", "file"), zap.Error(err))
-			}
-			return err
+			return addFile(message.ID, event.Source.UserID, event.ReplyToken)
+
 		case "image":
 			message := event.Message.(*linebot.ImageMessage)
-			_, err = files.Client.AddFromLine(message.ID, event.Source.UserID)
-			if err != nil {
-				zap.L().Error("Line webhook error", zap.String("event", "image"), zap.Error(err))
-			}
-			return err
+			return addFile(message.ID, event.Source.UserID, event.ReplyToken)
 		}
 	}
 
 	return c.SendStatus(fiber.StatusOK)
+}
+
+func addFile(msgId, userId, replyToken string) error {
+	newfile, err := files.Client.AddFromLine(msgId, userId)
+	if err != nil {
+		zap.L().Error("Line webhook error",
+			zap.String("event", "file"),
+			zap.String("msgId", msgId),
+			zap.String("userId", userId),
+			zap.Error(err),
+		)
+	}
+	msgs := []interface{}{
+		map[string]interface{}{
+			"type": "text",
+			"text": newfile.URL.ShortURL,
+		}}
+	err = line.Reply(replyToken, msgs)
+	if err != nil {
+		zap.L().Error("error reply msg", zap.Error(err))
+	}
+	return err
 }
 
 // EventMessageType - Check event message type

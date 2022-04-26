@@ -2,6 +2,7 @@ package urls
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/cjtim/cjtim-backend-go/internal/app/middlewares"
 	"github.com/cjtim/cjtim-backend-go/internal/app/repository"
@@ -72,5 +73,5 @@ func Delete(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return nil
+	return c.SendStatus(http.StatusOK)
 }
