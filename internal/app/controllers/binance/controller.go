@@ -66,7 +66,12 @@ func UpdatePrice(c *fiber.Ctx) error {
 		return err
 	}
 	user := middlewares.GetUser(c)
-	repository.BinanceRepo.FindOneAndReplace(context.TODO(), bson.M{"lineUid": user.UserID}, &data)
+	err = repository.BinanceRepo.FindOneAndReplace(context.TODO(), bson.M{"lineUid": user.UserID}, &data)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
 	return c.SendStatus(200)
 }
 
@@ -77,7 +82,13 @@ func Cronjob(c *fiber.Ctx) error {
 		return err
 	}
 
-	line_notify.TriggerLineNotify(&data)
+	_, errorUsers := line_notify.TriggerLineNotify(&data)
+
+	if len(errorUsers) > 0 {
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
+			"error": "cannot send notify for some users.",
+		})
+	}
 
 	return c.SendStatus(200)
 }

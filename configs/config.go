@@ -10,9 +10,9 @@ import (
 
 var (
 	AuthorizationHeader = "Authorization"
+	defaultDotEnvKey    = "DOTENV_FILE"
 	Config              *ConfigType
 	origConfig          ConfigType
-	secretVersion       int64 = 0
 )
 
 type ConfigType struct {
@@ -51,7 +51,7 @@ func init() {
 	defer fp.Close()
 
 	cfg := ConfigType{}
-	envFile := os.Getenv("DOTENV_FILE")
+	envFile := os.Getenv(defaultDotEnvKey)
 	if envFile == "" {
 		envFile = ".env"
 	}

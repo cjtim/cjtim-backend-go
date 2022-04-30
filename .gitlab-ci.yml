@@ -177,6 +177,7 @@ release-helm:
   script:
     - helm plugin install https://github.com/chartmuseum/helm-push.git
     - "sed -i \"s/version:.*/version: ${CI_COMMIT_TAG}/\" helm/Chart.yaml"
+    - "sed -i \"s/appVersion:.*/appVersion: \"${CI_COMMIT_TAG}\"/\" helm/Chart.yaml"
     - helm package helm
     - helm cm-push ./cjtim-backend-go-${CI_COMMIT_TAG}.tgz ${CI_PROJECT_NAME}
   needs: []
